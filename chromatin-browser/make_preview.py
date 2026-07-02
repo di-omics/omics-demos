@@ -5,15 +5,19 @@ Mirrors the in-browser synthetic tracks (H3K27me3 broad domains, Pol II S5p
 promoter peaks) and their called peaks. Open index.html for the interactive
 version. All data synthetic.
 """
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from style.plot_style import set_style, finalize, PALETTE, OUTLINE, OUTLINE_WIDTH
+set_style()
+
 import numpy as np
-import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyBboxPatch
 from pathlib import Path
 
 ASSETS = Path(__file__).parent / "assets"; ASSETS.mkdir(exist_ok=True)
 LEN, N = 50000, 500
-K27, POL2, PEAK = "#4B4FA6", "#1F8A70", "#C2367A"
+K27, POL2, PEAK = PALETTE["lavender"], PALETTE["mint"], PALETTE["rose"]
 rng = np.random.default_rng(20260702)
 bp = np.linspace(0, LEN, N)
 
@@ -44,17 +48,18 @@ def peaks(sig, thr):
 fig, axes = plt.subplots(2, 1, figsize=(9, 3.6), sharex=True)
 for ax, sig, col, name, thr in [(axes[0], k, K27, "H3K27me3", 0.45),
                                 (axes[1], p, POL2, "Pol II S5p", 0.30)]:
-    ax.fill_between(bp / 1000, sig, color=col, alpha=0.16)
+    ax.fill_between(bp / 1000, sig, color=col, alpha=0.25)
     ax.plot(bp / 1000, sig, color=col, lw=1.3)
     for a, b in peaks(sig, thr):
         ax.add_patch(FancyBboxPatch((a / 1000, 1.06), (b - a) / 1000, 0.12,
-                     boxstyle="round,pad=0,rounding_size=0.3", fc=PEAK, ec="none", alpha=0.85))
+                     boxstyle="round,pad=0,rounding_size=0.3", fc=PEAK, ec="none",
+                     alpha=0.85))
     ax.set_ylim(0, 1.28); ax.set_yticks([])
     ax.text(-0.5, 0.5, name, ha="right", va="center", fontsize=10, fontweight="bold")
     for s in ["top", "right", "left"]: ax.spines[s].set_visible(False)
 axes[1].set_xlabel("position (kb)"); axes[1].set_xlim(0, 50)
-fig.suptitle("chromatin-browser - synthetic CUT&Tag signal + called peaks",
+fig.suptitle("chromatin-browser \u2013 synthetic CUT&Tag signal + called peaks",
              fontsize=11, x=0.55)
-fig.tight_layout(rect=[0.04, 0, 1, 0.96])
-out = ASSETS / "preview.png"; fig.savefig(out, dpi=130, facecolor="#F4F6F8")
+finalize(fig)
+out = ASSETS / "preview.png"; fig.savefig(out, dpi=130)
 print("wrote", out)

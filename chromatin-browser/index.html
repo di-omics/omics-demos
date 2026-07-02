@@ -5,21 +5,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>chromatin-browser</title>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap');
   :root {
-    --bg: #F4F6F8;
+    --bg: #FAFBFC;
     --panel: #FFFFFF;
     --ink: #14181D;
     --muted: #5C6570;
     --hairline: #D6DBE1;
     --grid: #E9ECF0;
-    --k27: #4B4FA6;   /* H3K27me3 - repressive */
-    --pol2: #1F8A70;  /* Pol II S5p - active */
-    --peak: #C2367A;  /* called peaks */
+    --k27: #C8B8E8;   /* H3K27me3 - lavender pastel */
+    --pol2: #A8E8D0;  /* Pol II S5p - mint pastel */
+    --peak: #E8A8C0;  /* called peaks - rose pastel */
+    --outline: #6B7280;
+    --outline-w: 0.7px;
   }
   * { box-sizing: border-box; }
   body {
     margin: 0; background: var(--bg); color: var(--ink);
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-family: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     line-height: 1.4; padding: 32px 20px;
   }
   .wrap { max-width: 960px; margin: 0 auto; }
@@ -54,7 +57,7 @@
   }
   .readout b { color: var(--ink); font-weight: 600; }
   svg { display: block; width: 100%; height: auto; touch-action: none; }
-  text { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  text { font-family: "Manrope", system-ui, sans-serif; }
   .foot {
     color: var(--muted); font-size: 12px; margin-top: 14px; max-width: 70ch;
   }

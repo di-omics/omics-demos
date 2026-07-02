@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 """Plots for the Flex demo (writes assets/flex_qc.png)."""
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from style.plot_style import set_style, finalize, PALETTE, OUTLINE, OUTLINE_WIDTH
+set_style()
+
 import numpy as np, pandas as pd
-import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from pathlib import Path
 
@@ -15,20 +19,27 @@ def main():
 
     # barcode-rank (knee) plot
     ranked = df.total_umi.sort_values(ascending=False).values
-    ax[0].loglog(range(1, len(ranked) + 1), ranked, color="#3b6ea5")
+    ax[0].loglog(range(1, len(ranked) + 1), ranked, color=PALETTE["blue"])
     thr = df[df.called_cell].total_umi.min()
-    ax[0].axhline(thr, ls="--", color="#a53b6e", lw=1, label="cell threshold")
+    ax[0].axhline(thr, ls="--", color=PALETTE["rose"], lw=1, label="cell threshold")
     ax[0].set(title="Barcode rank (knee)", xlabel="barcode rank", ylabel="total UMI")
-    ax[0].legend(frameon=False)
+    ax[0].legend()
 
     # probes/cell per sample
     called = df[df.called_cell]
     samples = sorted(called.sample_bc.unique())
     data = [called[called.sample_bc == s].probes_detected.values for s in samples]
-    ax[1].boxplot(data, showfliers=False)
+    bp = ax[1].boxplot(data, showfliers=False, patch_artist=True,
+                       medianprops=dict(color=PALETTE["ink"], linewidth=1))
+    colors = [PALETTE["blue"], PALETTE["rose"], PALETTE["mint"], PALETTE["lavender"]]
+    for patch, c in zip(bp["boxes"], colors):
+        patch.set_facecolor(c)
+        patch.set_edgecolor(OUTLINE)
+        patch.set_linewidth(OUTLINE_WIDTH)
     ax[1].set_xticks(range(1, len(samples) + 1)); ax[1].set_xticklabels(samples)
     ax[1].set(title="Probes detected / cell", ylabel="probes", xlabel="sample barcode")
-    fig.tight_layout(); out = ASSETS / "flex_qc.png"; fig.savefig(out, dpi=130)
+    finalize(fig)
+    out = ASSETS / "flex_qc.png"; fig.savefig(out, dpi=130)
     print("wrote", out)
 
 
