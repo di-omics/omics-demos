@@ -15,12 +15,15 @@
     --muted: #7A828C;
     --hairline: #DCE1E7;
     --grid: #EDF0F3;
-    --k27: #5E8DBF;        /* H3K27me3 - repressive (baby blue) */
+    --k27: #5E8DBF;        /* H3K27me3 - baby blue */
     --k27-fill: #A9C9E8;
-    --pol2: #74A860;       /* Pol II S5p - active (baby green) */
+    --pol2: #74A860;       /* Pol II S5p - baby green */
     --pol2-fill: #B4DBA6;
-    --peak: #D07A90;       /* called peaks (baby pink) */
+    --peak: #D07A90;       /* called peaks - baby pink */
     --peak-fill: #F4B8C6;
+    --gene: #C7BCE8;       /* gene model - lavender */
+    --gene-outline: #8E7BC4;
+    --drag: rgba(94,141,191,0.15);
   }
   * { box-sizing: border-box; }
   body {
@@ -54,12 +57,18 @@
   .toggle:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
   .toggle .sw { width: 11px; height: 11px; border-radius: 3px; }
   .toggle[aria-pressed="false"] { opacity: 0.4; }
+  #resetBtn {
+    padding: 4px 12px; border: 1px solid var(--hairline); border-radius: 999px;
+    background: var(--panel); cursor: pointer; font-family: inherit; font-size: 12px;
+    color: var(--muted); transition: background 0.15s;
+  }
+  #resetBtn:hover { background: var(--grid); }
   .readout {
     margin-left: auto; font-family: 'Manrope', system-ui, sans-serif; font-size: 12px;
     color: var(--muted); white-space: nowrap;
   }
   .readout b { color: var(--ink); font-weight: 600; }
-  svg { display: block; width: 100%; height: auto; touch-action: none; }
+  svg { display: block; width: 100%; height: auto; touch-action: none; cursor: crosshair; }
   text { font-family: 'Manrope', system-ui, sans-serif; }
   .foot {
     color: var(--muted); font-size: 12px; margin-top: 14px; max-width: 70ch;
@@ -76,8 +85,8 @@
   <h1>chromatin-browser</h1>
   <p class="sub">A minimal genome browser for two chromatin marks over a single locus:
     H3K27me3 (Polycomb-repressed, broad domains) and Pol II S5p (initiating polymerase,
-    sharp promoter peaks). Move across the track to read signal; called peaks are marked
-    beneath the ruler.</p>
+    sharp promoter peaks). Drag to zoom; click reset to return. Called peaks and gene models
+    are shown beneath the ruler.</p>
   <p class="synthetic">all signal is synthetic - generated in-browser, no data files</p>
 
   <div class="panel">
@@ -88,15 +97,17 @@
       <span class="toggle" role="button" tabindex="0" aria-pressed="true" data-track="pol2">
         <span class="sw" style="background:var(--pol2)"></span>Pol II S5p
       </span>
-      <span class="readout" id="readout">move over the tracks &rarr;</span>
+      <button id="resetBtn" title="Reset zoom">reset</button>
+      <span class="readout" id="readout">drag to zoom, hover for values &rarr;</span>
     </div>
-    <svg id="browser" viewBox="0 0 1000 340" preserveAspectRatio="xMidYMid meet"
-         role="img" aria-label="Synthetic chromatin signal tracks with called peaks"></svg>
+    <svg id="browser" viewBox="0 0 1000 400" preserveAspectRatio="xMidYMid meet"
+         role="img" aria-label="Synthetic chromatin signal tracks with called peaks and gene models"></svg>
   </div>
 
   <p class="foot">Signal is drawn from a seeded generator: H3K27me3 as low-frequency broad
     enrichment, Pol II S5p as Gaussian peaks at synthetic promoters. Peaks are called by a
-    per-track threshold and merged across adjacent bins. Swap the generator for a real
+    per-track threshold and merged across adjacent bins. Drag horizontally to zoom into a
+    region; click <b>reset</b> to return to the full view. Swap the generator for a real
     <code>bedGraph</code> to view your own tracks.</p>
 </div>
 
@@ -115,26 +126,24 @@
   const rnd = mulberry32(20260702);
 
   // ---- synthesize tracks ----
-  const LEN = 50000;          // locus length in bp
-  const N = 500;              // bins
-  const step = LEN / N;
-  const xs = Array.from({ length: N }, (_, i) => Math.round(i * step));
+  const FULL_LEN = 50000;
+  const N = 500;
+  const fullStep = FULL_LEN / N;
+  const fullXs = Array.from({ length: N }, (_, i) => Math.round(i * fullStep));
 
-  // H3K27me3: sum of a few low-frequency sinusoids -> broad plateaus, then clamp low values
-  const k27 = xs.map((bp) => {
+  const k27 = fullXs.map((bp) => {
     let v = 0;
     for (const [amp, period, ph] of [[1.0, 26000, 0.4], [0.6, 14000, 2.1], [0.35, 8000, 5.0]]) {
       v += amp * (0.5 + 0.5 * Math.sin((2 * Math.PI * bp) / period + ph));
     }
     v = v / 1.95 + (rnd() - 0.5) * 0.06;
-    return Math.max(0, v - 0.28);   // depress baseline so domains stand out
+    return Math.max(0, v - 0.28);
   });
 
-  // Pol II S5p: sharp Gaussian peaks at synthetic promoters + low noise floor
   const promoters = [6200, 15800, 24500, 33900, 41200, 46800];
   const widths =    [900,  700,   1200,  650,   800,   600];
   const heights =   [0.95, 0.7,   1.0,   0.55,  0.8,   0.5];
-  const pol2 = xs.map((bp) => {
+  const pol2 = fullXs.map((bp) => {
     let v = 0.03 * rnd();
     promoters.forEach((p, i) => {
       const d = bp - p;
@@ -143,17 +152,17 @@
     return v;
   });
 
-  const normalize = (arr) => { const m = Math.max(...arr); return arr.map((v) => v / m); };
-  const K = normalize(k27), P = normalize(pol2);
+  const normalizeArr = (arr) => { const m = Math.max(...arr); return arr.map((v) => v / m); };
+  const K = normalizeArr(k27), P = normalizeArr(pol2);
 
-  // ---- peak calling: threshold + merge adjacent bins ----
+  // ---- peak calling ----
   function callPeaks(sig, thr) {
     const peaks = []; let start = null;
     for (let i = 0; i < sig.length; i++) {
       if (sig[i] >= thr && start === null) start = i;
       if ((sig[i] < thr || i === sig.length - 1) && start !== null) {
         const end = sig[i] < thr ? i - 1 : i;
-        if (end - start >= 1) peaks.push([xs[start], xs[end]]);
+        if (end - start >= 1) peaks.push([fullXs[start], fullXs[end]]);
         start = null;
       }
     }
@@ -162,76 +171,179 @@
   const peaksK = callPeaks(K, 0.45);
   const peaksP = callPeaks(P, 0.30);
 
+  // ---- synthetic gene models (placed near promoters) ----
+  const genes = [
+    { name: "SYN1",  start: 4000,  end: 8500,  strand: "+", exons: [[4000,4800],[5500,6000],[7200,7600],[8000,8500]] },
+    { name: "SYN2",  start: 13500, end: 17500, strand: "-", exons: [[13500,14200],[15000,15600],[16800,17500]] },
+    { name: "SYN3",  start: 22000, end: 27000, strand: "+", exons: [[22000,22600],[23800,24200],[25500,26000],[26500,27000]] },
+    { name: "SYN4",  start: 32000, end: 35500, strand: "-", exons: [[32000,32800],[33500,34000],[35000,35500]] },
+    { name: "SYN5",  start: 39000, end: 43000, strand: "+", exons: [[39000,39500],[40800,41400],[42200,43000]] },
+    { name: "SYN6",  start: 45000, end: 48500, strand: "-", exons: [[45000,45600],[46200,46800],[47800,48500]] },
+  ];
+
   // ---- layout ----
-  const W = 1000, VB_H = 340;
+  const W = 1000, VB_H = 400;
   const M = { l: 92, r: 18, t: 34, b: 20 };
   const plotW = W - M.l - M.r;
-  const laneH = 96, laneGap = 16, rulerH = 22, peakH = 12;
-  const lanes = {
-    k27:  { y: M.t + rulerH + peakH, sig: K, color: "var(--k27)", fill: "var(--k27-fill)", label: "H3K27me3", peaks: peaksK },
-    pol2: { y: M.t + rulerH + peakH + laneH + laneGap, sig: P, color: "var(--pol2)", fill: "var(--pol2-fill)", label: "Pol II S5p", peaks: peaksP },
-  };
-  const bpToX = (bp) => M.l + (bp / LEN) * plotW;
+  const laneH = 82, laneGap = 14, rulerH = 22, peakH = 10, geneH = 24;
+
+  // ---- zoom state ----
+  let viewStart = 0, viewEnd = FULL_LEN;
+
+  function bpToX(bp) { return M.l + ((bp - viewStart) / (viewEnd - viewStart)) * plotW; }
+  function xToBp(x) { return viewStart + ((x - M.l) / plotW) * (viewEnd - viewStart); }
+
   const svg = document.getElementById("browser");
   const NS = "http://www.w3.org/2000/svg";
   const el = (t, a) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); return e; };
   const shown = { k27: true, pol2: true };
 
+  const lanes = {
+    k27:  { sig: K, color: "var(--k27)", fill: "var(--k27-fill)", label: "H3K27me3", peaks: peaksK },
+    pol2: { sig: P, color: "var(--pol2)", fill: "var(--pol2-fill)", label: "Pol II S5p", peaks: peaksP },
+  };
+
+  function laneY(key) {
+    const geneTrackH = geneH + 6;
+    if (key === "k27") return M.t + rulerH + geneTrackH + peakH;
+    return M.t + rulerH + geneTrackH + peakH + laneH + laneGap;
+  }
+
   function areaPath(sig, baseY) {
-    let d = `M ${bpToX(xs[0])} ${baseY}`;
-    for (let i = 0; i < N; i++) d += ` L ${bpToX(xs[i]).toFixed(1)} ${(baseY - sig[i] * (laneH - 8)).toFixed(1)}`;
-    d += ` L ${bpToX(xs[N - 1])} ${baseY} Z`;
+    let d = "";
+    let first = true;
+    for (let i = 0; i < N; i++) {
+      const bp = fullXs[i];
+      if (bp < viewStart || bp > viewEnd) continue;
+      const x = bpToX(bp).toFixed(1);
+      const y = (baseY - sig[i] * (laneH - 8)).toFixed(1);
+      if (first) { d = `M ${x} ${baseY} L ${x} ${y}`; first = false; }
+      else d += ` L ${x} ${y}`;
+    }
+    if (!d) return "";
+    d += ` L ${bpToX(Math.min(viewEnd, fullXs[N-1])).toFixed(1)} ${baseY} Z`;
     return d;
   }
 
   function render() {
     while (svg.firstChild) svg.removeChild(svg.firstChild);
+    const geneTrackH = geneH + 6;
 
-    // vertical gridlines every 5 kb
-    for (let bp = 0; bp <= LEN; bp += 5000) {
+    // grid interval: adapt to zoom level
+    const span = viewEnd - viewStart;
+    let gridStep = 5000;
+    if (span < 5000) gridStep = 500;
+    else if (span < 15000) gridStep = 1000;
+    else if (span < 30000) gridStep = 2500;
+
+    const trackBottom = laneY("pol2") + laneH;
+
+    // vertical gridlines
+    for (let bp = Math.ceil(viewStart / gridStep) * gridStep; bp <= viewEnd; bp += gridStep) {
       const x = bpToX(bp);
-      svg.appendChild(el("line", { x1: x, y1: M.t + rulerH, x2: x, y2: VB_H - M.b, stroke: "var(--grid)", "stroke-width": 1 }));
+      svg.appendChild(el("line", { x1: x, y1: M.t + rulerH, x2: x, y2: trackBottom, stroke: "var(--grid)", "stroke-width": 1 }));
     }
+
     // ruler
     svg.appendChild(el("line", { x1: M.l, y1: M.t + rulerH, x2: W - M.r, y2: M.t + rulerH, stroke: "var(--hairline)", "stroke-width": 1 }));
-    for (let bp = 0; bp <= LEN; bp += 5000) {
+    for (let bp = Math.ceil(viewStart / gridStep) * gridStep; bp <= viewEnd; bp += gridStep) {
       const x = bpToX(bp);
       svg.appendChild(el("line", { x1: x, y1: M.t + rulerH - 5, x2: x, y2: M.t + rulerH, stroke: "var(--muted)", "stroke-width": 1 }));
       const t = el("text", { x: x, y: M.t + rulerH - 9, "text-anchor": "middle", "font-size": 10, fill: "var(--muted)" });
-      t.textContent = (bp / 1000) + " kb"; svg.appendChild(t);
+      t.textContent = bp >= 1000 ? (bp / 1000).toFixed(span < 10000 ? 1 : 0) + " kb" : bp + " bp";
+      svg.appendChild(t);
     }
 
-    for (const key of ["k27", "pol2"]) {
-      const L = lanes[key], baseY = L.y + laneH;
-      if (!shown[key]) continue;
-      // peak lozenges above the lane
-      L.peaks.forEach(([a, b]) => {
+    // gene models (under ruler)
+    const geneY = M.t + rulerH + 4;
+    const geneLabel = el("text", { x: M.l - 10, y: geneY + geneH / 2 + 2, "text-anchor": "end", "font-size": 10, fill: "var(--muted)" });
+    geneLabel.textContent = "genes"; svg.appendChild(geneLabel);
+
+    genes.forEach((g) => {
+      if (g.end < viewStart || g.start > viewEnd) return;
+      const x1 = Math.max(bpToX(g.start), M.l);
+      const x2 = Math.min(bpToX(g.end), W - M.r);
+      // intron line
+      const midY = geneY + geneH / 2;
+      svg.appendChild(el("line", { x1, y1: midY, x2, y2: midY, stroke: "var(--gene-outline)", "stroke-width": 1 }));
+      // exon boxes
+      g.exons.forEach(([es, ee]) => {
+        if (ee < viewStart || es > viewEnd) return;
+        const ex1 = Math.max(bpToX(es), M.l);
+        const ex2 = Math.min(bpToX(ee), W - M.r);
         svg.appendChild(el("rect", {
-          x: bpToX(a), y: L.y - peakH - 2, width: Math.max(2, bpToX(b) - bpToX(a)),
+          x: ex1, y: geneY + 4, width: Math.max(2, ex2 - ex1), height: geneH - 8,
+          fill: "var(--gene)", stroke: "var(--gene-outline)", "stroke-width": 0.8, rx: 2,
+        }));
+      });
+      // strand arrow
+      const arrowX = g.strand === "+" ? x2 + 3 : x1 - 3;
+      if (arrowX > M.l && arrowX < W - M.r) {
+        const t = el("text", { x: arrowX, y: midY + 4, "font-size": 10, fill: "var(--gene-outline)", "text-anchor": "middle" });
+        t.textContent = g.strand === "+" ? "\u25B6" : "\u25C0";
+        svg.appendChild(t);
+      }
+      // gene name
+      const nameX = (x1 + x2) / 2;
+      if (x2 - x1 > 30) {
+        const nm = el("text", { x: nameX, y: geneY + geneH + 2, "text-anchor": "middle", "font-size": 8, fill: "var(--gene-outline)", "font-style": "italic" });
+        nm.textContent = g.name; svg.appendChild(nm);
+      }
+    });
+
+    // separator under genes
+    svg.appendChild(el("line", { x1: M.l, y1: geneY + geneH + 5, x2: W - M.r, y2: geneY + geneH + 5, stroke: "var(--hairline)", "stroke-width": 0.5 }));
+
+    // signal tracks
+    for (const key of ["k27", "pol2"]) {
+      const L = lanes[key], baseY = laneY(key) + laneH;
+      if (!shown[key]) continue;
+      // peak lozenges
+      L.peaks.forEach(([a, b]) => {
+        if (b < viewStart || a > viewEnd) return;
+        const px1 = Math.max(bpToX(a), M.l);
+        const px2 = Math.min(bpToX(b), W - M.r);
+        svg.appendChild(el("rect", {
+          x: px1, y: laneY(key) - peakH - 2, width: Math.max(2, px2 - px1),
           height: peakH, rx: 3, fill: "var(--peak-fill)", stroke: "var(--peak)", "stroke-width": 1,
         }));
       });
       // baseline
       svg.appendChild(el("line", { x1: M.l, y1: baseY, x2: W - M.r, y2: baseY, stroke: "var(--hairline)", "stroke-width": 1 }));
       // area + outline
-      svg.appendChild(el("path", { d: areaPath(L.sig, baseY), fill: L.fill, "fill-opacity": 0.55 }));
-      let ol = `M ${bpToX(xs[0])} ${(baseY - L.sig[0] * (laneH - 8)).toFixed(1)}`;
-      for (let i = 1; i < N; i++) ol += ` L ${bpToX(xs[i]).toFixed(1)} ${(baseY - L.sig[i] * (laneH - 8)).toFixed(1)}`;
-      svg.appendChild(el("path", { d: ol, fill: "none", stroke: L.color, "stroke-width": 1.4 }));
+      const ap = areaPath(L.sig, baseY);
+      if (ap) {
+        svg.appendChild(el("path", { d: ap, fill: L.fill, "fill-opacity": 0.55 }));
+        // outline only (skip the closing baseline segment)
+        let ol = "";
+        let started = false;
+        for (let i = 0; i < N; i++) {
+          if (fullXs[i] < viewStart || fullXs[i] > viewEnd) continue;
+          const px = bpToX(fullXs[i]).toFixed(1);
+          const py = (baseY - L.sig[i] * (laneH - 8)).toFixed(1);
+          ol += started ? ` L ${px} ${py}` : `M ${px} ${py}`;
+          started = true;
+        }
+        if (ol) svg.appendChild(el("path", { d: ol, fill: "none", stroke: L.color, "stroke-width": 1.4 }));
+      }
       // label + peak count
-      const lab = el("text", { x: M.l - 10, y: L.y + laneH / 2, "text-anchor": "end", "font-size": 12, fill: "var(--ink)", "font-weight": 600 });
+      const lab = el("text", { x: M.l - 10, y: laneY(key) + laneH / 2, "text-anchor": "end", "font-size": 12, fill: "var(--ink)", "font-weight": 600 });
       lab.textContent = L.label; svg.appendChild(lab);
-      const cnt = el("text", { x: M.l - 10, y: L.y + laneH / 2 + 15, "text-anchor": "end", "font-size": 10, fill: "var(--muted)" });
+      const cnt = el("text", { x: M.l - 10, y: laneY(key) + laneH / 2 + 15, "text-anchor": "end", "font-size": 10, fill: "var(--muted)" });
       cnt.textContent = L.peaks.length + " peaks"; svg.appendChild(cnt);
     }
 
     // crosshair + dots (hidden until hover)
-    const ch = el("line", { class: "crosshair", y1: M.t + rulerH, y2: VB_H - M.b, stroke: "var(--ink)", "stroke-width": 1, "stroke-dasharray": "3 3", opacity: 0 });
+    const ch = el("line", { class: "crosshair", y1: M.t + rulerH, y2: trackBottom, stroke: "var(--ink)", "stroke-width": 1, "stroke-dasharray": "3 3", opacity: 0 });
     ch.id = "crosshair"; svg.appendChild(ch);
     for (const key of ["k27", "pol2"]) {
       const dot = el("circle", { class: "dot", r: 3.2, fill: lanes[key].color, opacity: 0, stroke: "#fff", "stroke-width": 1 });
       dot.id = "dot-" + key; svg.appendChild(dot);
     }
+
+    // drag selection overlay (hidden)
+    const sel = el("rect", { id: "dragSel", x: 0, y: M.t + rulerH, width: 0, height: trackBottom - M.t - rulerH, fill: "var(--drag)", stroke: "var(--k27)", "stroke-width": 1, "stroke-dasharray": "4 2", opacity: 0, rx: 2 });
+    svg.appendChild(sel);
   }
 
   // ---- interaction: crosshair scrub ----
@@ -240,33 +352,90 @@
     const r = svg.getBoundingClientRect();
     return ((evt.clientX - r.left) / r.width) * W;
   }
+  function nearestBin(bp) {
+    let best = 0, bestD = Infinity;
+    for (let i = 0; i < N; i++) {
+      const d = Math.abs(fullXs[i] - bp);
+      if (d < bestD) { bestD = d; best = i; }
+    }
+    return best;
+  }
   function move(evt) {
+    if (dragStart !== null) return; // dragging, don't show crosshair
     const x = svgX(evt);
     if (x < M.l || x > W - M.r) return hide();
-    const bp = Math.round(((x - M.l) / plotW) * LEN);
-    const i = Math.min(N - 1, Math.max(0, Math.round(bp / step)));
+    const bp = xToBp(x);
+    const i = nearestBin(bp);
     const ch = document.getElementById("crosshair");
-    ch.setAttribute("x1", bpToX(xs[i])); ch.setAttribute("x2", bpToX(xs[i])); ch.setAttribute("opacity", 1);
+    const cx = bpToX(fullXs[i]);
+    ch.setAttribute("x1", cx); ch.setAttribute("x2", cx); ch.setAttribute("opacity", 1);
     const parts = [];
     for (const key of ["k27", "pol2"]) {
       const dot = document.getElementById("dot-" + key), L = lanes[key];
       if (shown[key]) {
-        const y = (L.y + laneH) - L.sig[i] * (laneH - 8);
-        dot.setAttribute("cx", bpToX(xs[i])); dot.setAttribute("cy", y); dot.setAttribute("opacity", 1);
+        const y = (laneY(key) + laneH) - L.sig[i] * (laneH - 8);
+        dot.setAttribute("cx", cx); dot.setAttribute("cy", y); dot.setAttribute("opacity", 1);
         parts.push(`${L.label} <b>${L.sig[i].toFixed(2)}</b>`);
       } else { dot.setAttribute("opacity", 0); }
     }
-    readout.innerHTML = `<b>${xs[i].toLocaleString()}</b> bp &nbsp; ` + parts.join(" &nbsp; ");
+    readout.innerHTML = `<b>${fullXs[i].toLocaleString()}</b> bp &nbsp; ` + parts.join(" &nbsp; ");
   }
   function hide() {
     const ch = document.getElementById("crosshair");
     if (ch) ch.setAttribute("opacity", 0);
     ["k27", "pol2"].forEach((k) => { const d = document.getElementById("dot-" + k); if (d) d.setAttribute("opacity", 0); });
-    readout.innerHTML = "move over the tracks &rarr;";
+    if (dragStart === null) readout.innerHTML = "drag to zoom, hover for values &rarr;";
   }
   svg.addEventListener("mousemove", move);
   svg.addEventListener("mouseleave", hide);
   svg.addEventListener("touchmove", (e) => { if (e.touches[0]) move(e.touches[0]); }, { passive: true });
+
+  // ---- drag-to-zoom ----
+  let dragStart = null;
+  svg.addEventListener("mousedown", (e) => {
+    const x = svgX(e);
+    if (x < M.l || x > W - M.r) return;
+    dragStart = x;
+    e.preventDefault();
+  });
+  svg.addEventListener("mousemove", (e) => {
+    if (dragStart === null) return;
+    const x = svgX(e);
+    const sel = document.getElementById("dragSel");
+    if (!sel) return;
+    const x1 = Math.max(M.l, Math.min(dragStart, x));
+    const x2 = Math.min(W - M.r, Math.max(dragStart, x));
+    sel.setAttribute("x", x1);
+    sel.setAttribute("width", x2 - x1);
+    sel.setAttribute("opacity", 1);
+    const bp1 = Math.round(xToBp(x1));
+    const bp2 = Math.round(xToBp(x2));
+    readout.innerHTML = `selecting <b>${bp1.toLocaleString()}</b> - <b>${bp2.toLocaleString()}</b> bp`;
+  });
+  function endDrag(e) {
+    if (dragStart === null) return;
+    const x = svgX(e);
+    const x1 = Math.min(dragStart, x);
+    const x2 = Math.max(dragStart, x);
+    dragStart = null;
+    const sel = document.getElementById("dragSel");
+    if (sel) sel.setAttribute("opacity", 0);
+    if (x2 - x1 < 5) return; // too small, treat as click
+    const bp1 = Math.max(0, Math.round(xToBp(x1)));
+    const bp2 = Math.min(FULL_LEN, Math.round(xToBp(x2)));
+    if (bp2 - bp1 < 200) return; // minimum zoom
+    viewStart = bp1;
+    viewEnd = bp2;
+    render();
+  }
+  svg.addEventListener("mouseup", endDrag);
+  svg.addEventListener("mouseleave", (e) => { if (dragStart !== null) endDrag(e); });
+
+  // ---- reset button ----
+  document.getElementById("resetBtn").addEventListener("click", () => {
+    viewStart = 0; viewEnd = FULL_LEN; render();
+    readout.innerHTML = "drag to zoom, hover for values &rarr;";
+  });
 
   // ---- track toggles ----
   document.querySelectorAll(".toggle").forEach((t) => {
