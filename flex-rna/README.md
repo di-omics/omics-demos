@@ -6,8 +6,6 @@ for a 10x Flex-style design.
 > **Assumption:** `flex-demos` here is read as **10x Genomics Flex**. If it means something
 > else, swap the data model - the QC pattern is the same.
 
-All data is synthetic - no real counts.
-
 ## Run
 
 ```bash

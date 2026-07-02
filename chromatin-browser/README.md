@@ -5,9 +5,6 @@ H3K27me3 (Polycomb-repressed, broad domains) and Pol II S5p (initiating polymera
 sharp promoter peaks). Move across the tracks to read signal; called peaks are marked
 under the ruler.
 
-All signal is synthetic and generated in-browser - **there are no data files, and it
-opens with no server**.
-
 ## Run
 
 Open `index.html` in any browser. For a shareable link, enable GitHub Pages on this repo

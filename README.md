@@ -1,6 +1,6 @@
 # omics-demos
 
-Small, self-contained toy examples from an omics + lab-automation stack - sequencing
+Small, self-contained examples from an omics + lab-automation stack - sequencing
 QC, single-cell/probe RNA, epigenomics, bulk RNA-seq, and Hamilton liquid handling.
 Each demo runs in one command, uses only **synthetic data**, and shows exactly one idea.
 

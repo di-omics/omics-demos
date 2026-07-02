@@ -3,8 +3,6 @@
 Why UMIs matter, in one runnable example. Simulates a PCR-amplified, UMI-tagged
 library, then recovers true molecule counts from duplicated, error-containing reads.
 
-All data is synthetic - no real sequencing data.
-
 ## Run
 
 ```bash
