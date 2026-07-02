@@ -1,9 +1,8 @@
 # omics-demos
 
 Small, self-contained toy examples from an omics + lab-automation stack - sequencing
-QC, single-cell/probe RNA, epigenomics, cross-species transcriptomics, bulk RNA-seq, and
-Hamilton liquid handling. Each demo runs in one command, uses only **synthetic data**, and shows
-exactly one idea.
+QC, single-cell/probe RNA, epigenomics, bulk RNA-seq, and Hamilton liquid handling.
+Each demo runs in one command, uses only **synthetic data**, and shows exactly one idea.
 
 Clean-room by design: no proprietary data or code - every dataset is generated on the fly.
 
@@ -15,7 +14,6 @@ make all          # run every demo
 # or one at a time:
 make emseq        # EM-seq methylation QC
 make umi          # UMI deduplication
-make species      # cross-species transcriptome
 make flex         # 10x Flex cell calling
 make rna          # bulk RNA-seq differential expression
 make liquid       # Hamilton STAR library prep (PyLabRobot sim)
@@ -43,16 +41,6 @@ Recovers true molecule counts from PCR-amplified, error-containing UMI reads wit
 ![umi](umi-dedup/assets/umi_qc.png)
 
 [-> umi-dedup/](umi-dedup/)
-
----
-
-### species-transcriptome - cross-species maternal transcriptome
-Human / bovine / marmoset ortholog comparison at zygote and 2-cell stages: cross-species
-correlation plus divergent-ortholog ranking.
-
-![species](species-transcriptome/assets/species_qc.png)
-
-[-> species-transcriptome/](species-transcriptome/)
 
 ---
 

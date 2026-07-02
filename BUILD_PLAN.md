@@ -33,7 +33,7 @@ read from or copied - every demo is a fresh, generic reimplementation.
 |------------------------------|------------------------|--------|------|
 | emseq-pipeline-validation    | emseq-methylation      | done   | lambda/pUC19 controls, 10 ng vs 0.1 ng |
 | flashseq-umi-pipeline        | umi-dedup              | done   | 1-mismatch directional collapse |
-| icsi-species-comparison      | species-transcriptome  | done   | 3-species ortholog correlation |
+| icsi-species-comparison      | (removed)              | -      | removed from public repo |
 | flex-demos                   | flex-rna               | done   | **assumes 10x Flex - confirm** |
 | hamilton-star                | liquid-handling        | done   | PyLabRobot chatterbox, STAR; PCR1 MM / SPRI cleanup / PCR2 index (generic volumes) |
 | epigenome                    | chromatin-browser      | done   | self-contained interactive HTML |
@@ -81,7 +81,7 @@ Bulk/single-blastocyst RNA-seq mini-pipeline on synthetic counts:
 - `analyze.py`: CPM/log-normalize, PCA, a simple per-gene t-test with BH correction; report
   how many planted DE genes are recovered.
 - `plots.py`: PCA scatter + volcano.
-Keep it distinct from `flex-rna` (probe-based) and `species-transcriptome` (cross-species).
+Keep it distinct from `flex-rna` (probe-based).
 
 ## Doing this agentically
 

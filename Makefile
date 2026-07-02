@@ -1,17 +1,14 @@
 PY ?= python
 
-.PHONY: all emseq umi species flex rna liquid chromatin clean
+.PHONY: all emseq umi flex rna liquid chromatin clean
 
-all: emseq umi species flex rna liquid chromatin
+all: emseq umi flex rna liquid chromatin
 
 emseq:
 	cd emseq-methylation && $(PY) generate_data.py && $(PY) analyze.py && $(PY) plots.py
 
 umi:
 	cd umi-dedup && $(PY) generate_data.py && $(PY) analyze.py && $(PY) plots.py
-
-species:
-	cd species-transcriptome && $(PY) generate_data.py && $(PY) analyze.py && $(PY) plots.py
 
 flex:
 	cd flex-rna && $(PY) generate_data.py && $(PY) analyze.py && $(PY) plots.py
