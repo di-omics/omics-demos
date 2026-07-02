@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>chromatin-browser</title>
+<style>
+  :root {
+    --bg: #F4F6F8;
+    --panel: #FFFFFF;
+    --ink: #14181D;
+    --muted: #5C6570;
+    --hairline: #D6DBE1;
+    --grid: #E9ECF0;
+    --k27: #4B4FA6;   /* H3K27me3 - repressive */
+    --pol2: #1F8A70;  /* Pol II S5p - active */
+    --peak: #C2367A;  /* called peaks */
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.4; padding: 32px 20px;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; }
+  .eyebrow {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--muted); margin: 0 0 6px;
+  }
+  h1 { font-size: 26px; letter-spacing: -0.01em; margin: 0 0 6px; font-weight: 650; }
+  .sub { color: var(--muted); font-size: 14px; margin: 0 0 2px; max-width: 62ch; }
+  .synthetic { font-family: ui-monospace, monospace; font-size: 11px; color: var(--peak); margin: 8px 0 22px; }
+
+  .panel {
+    background: var(--panel); border: 1px solid var(--hairline);
+    border-radius: 10px; padding: 18px 18px 10px;
+  }
+  .controls {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px;
+    margin-bottom: 12px; font-family: ui-monospace, monospace; font-size: 12px;
+  }
+  .toggle {
+    display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
+    padding: 4px 10px; border: 1px solid var(--hairline); border-radius: 999px;
+    user-select: none;
+  }
+  .toggle:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .toggle .sw { width: 11px; height: 11px; border-radius: 3px; }
+  .toggle[aria-pressed="false"] { opacity: 0.4; }
+  .readout {
+    margin-left: auto; font-family: ui-monospace, monospace; font-size: 12px;
+    color: var(--muted); white-space: nowrap;
+  }
+  .readout b { color: var(--ink); font-weight: 600; }
+  svg { display: block; width: 100%; height: auto; touch-action: none; }
+  text { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  .foot {
+    color: var(--muted); font-size: 12px; margin-top: 14px; max-width: 70ch;
+  }
+  .foot code { background: #EDF0F3; padding: 1px 5px; border-radius: 4px; }
+  @media (prefers-reduced-motion: no-preference) {
+    .crosshair, .dot { transition: opacity 0.12s ease; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">CUT&amp;Tag · ARS-UCD2.0 · chr7 demo locus</p>
+  <h1>chromatin-browser</h1>
+  <p class="sub">A minimal genome browser for two chromatin marks over a single locus:
+    H3K27me3 (Polycomb-repressed, broad domains) and Pol II S5p (initiating polymerase,
+    sharp promoter peaks). Move across the track to read signal; called peaks are marked
+    beneath the ruler.</p>
+  <p class="synthetic">all signal is synthetic - generated in-browser, no data files</p>
+
+  <div class="panel">
+    <div class="controls">
+      <span class="toggle" role="button" tabindex="0" aria-pressed="true" data-track="k27">
+        <span class="sw" style="background:var(--k27)"></span>H3K27me3
+      </span>
+      <span class="toggle" role="button" tabindex="0" aria-pressed="true" data-track="pol2">
+        <span class="sw" style="background:var(--pol2)"></span>Pol II S5p
+      </span>
+      <span class="readout" id="readout">move over the tracks &rarr;</span>
+    </div>
+    <svg id="browser" viewBox="0 0 1000 340" preserveAspectRatio="xMidYMid meet"
+         role="img" aria-label="Synthetic chromatin signal tracks with called peaks"></svg>
+  </div>
+
+  <p class="foot">Signal is drawn from a seeded generator: H3K27me3 as low-frequency broad
+    enrichment, Pol II S5p as Gaussian peaks at synthetic promoters. Peaks are called by a
+    per-track threshold and merged across adjacent bins. Swap the generator for a real
+    <code>bedGraph</code> to view your own tracks.</p>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  // ---- deterministic PRNG (mulberry32) ----
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  const rnd = mulberry32(20260702);
+
+  // ---- synthesize tracks ----
+  const LEN = 50000;          // locus length in bp
+  const N = 500;              // bins
+  const step = LEN / N;
+  const xs = Array.from({ length: N }, (_, i) => Math.round(i * step));
+
+  // H3K27me3: sum of a few low-frequency sinusoids -> broad plateaus, then clamp low values
+  const k27 = xs.map((bp) => {
+    let v = 0;
+    for (const [amp, period, ph] of [[1.0, 26000, 0.4], [0.6, 14000, 2.1], [0.35, 8000, 5.0]]) {
+      v += amp * (0.5 + 0.5 * Math.sin((2 * Math.PI * bp) / period + ph));
+    }
+    v = v / 1.95 + (rnd() - 0.5) * 0.06;
+    return Math.max(0, v - 0.28);   // depress baseline so domains stand out
+  });
+
+  // Pol II S5p: sharp Gaussian peaks at synthetic promoters + low noise floor
+  const promoters = [6200, 15800, 24500, 33900, 41200, 46800];
+  const widths =    [900,  700,   1200,  650,   800,   600];
+  const heights =   [0.95, 0.7,   1.0,   0.55,  0.8,   0.5];
+  const pol2 = xs.map((bp) => {
+    let v = 0.03 * rnd();
+    promoters.forEach((p, i) => {
+      const d = bp - p;
+      v += heights[i] * Math.exp(-(d * d) / (2 * widths[i] * widths[i]));
+    });
+    return v;
+  });
+
+  const normalize = (arr) => { const m = Math.max(...arr); return arr.map((v) => v / m); };
+  const K = normalize(k27), P = normalize(pol2);
+
+  // ---- peak calling: threshold + merge adjacent bins ----
+  function callPeaks(sig, thr) {
+    const peaks = []; let start = null;
+    for (let i = 0; i < sig.length; i++) {
+      if (sig[i] >= thr && start === null) start = i;
+      if ((sig[i] < thr || i === sig.length - 1) && start !== null) {
+        const end = sig[i] < thr ? i - 1 : i;
+        if (end - start >= 1) peaks.push([xs[start], xs[end]]);
+        start = null;
+      }
+    }
+    return peaks;
+  }
+  const peaksK = callPeaks(K, 0.45);
+  const peaksP = callPeaks(P, 0.30);
+
+  // ---- layout ----
+  const W = 1000, VB_H = 340;
+  const M = { l: 92, r: 18, t: 34, b: 20 };
+  const plotW = W - M.l - M.r;
+  const laneH = 96, laneGap = 16, rulerH = 22, peakH = 12;
+  const lanes = {
+    k27:  { y: M.t + rulerH + peakH, sig: K, color: "var(--k27)", label: "H3K27me3", peaks: peaksK },
+    pol2: { y: M.t + rulerH + peakH + laneH + laneGap, sig: P, color: "var(--pol2)", label: "Pol II S5p", peaks: peaksP },
+  };
+  const bpToX = (bp) => M.l + (bp / LEN) * plotW;
+  const svg = document.getElementById("browser");
+  const NS = "http://www.w3.org/2000/svg";
+  const el = (t, a) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); return e; };
+  const shown = { k27: true, pol2: true };
+
+  function areaPath(sig, baseY) {
+    let d = `M ${bpToX(xs[0])} ${baseY}`;
+    for (let i = 0; i < N; i++) d += ` L ${bpToX(xs[i]).toFixed(1)} ${(baseY - sig[i] * (laneH - 8)).toFixed(1)}`;
+    d += ` L ${bpToX(xs[N - 1])} ${baseY} Z`;
+    return d;
+  }
+
+  function render() {
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+    // vertical gridlines every 5 kb
+    for (let bp = 0; bp <= LEN; bp += 5000) {
+      const x = bpToX(bp);
+      svg.appendChild(el("line", { x1: x, y1: M.t + rulerH, x2: x, y2: VB_H - M.b, stroke: "var(--grid)", "stroke-width": 1 }));
+    }
+    // ruler
+    svg.appendChild(el("line", { x1: M.l, y1: M.t + rulerH, x2: W - M.r, y2: M.t + rulerH, stroke: "var(--hairline)", "stroke-width": 1 }));
+    for (let bp = 0; bp <= LEN; bp += 5000) {
+      const x = bpToX(bp);
+      svg.appendChild(el("line", { x1: x, y1: M.t + rulerH - 5, x2: x, y2: M.t + rulerH, stroke: "var(--muted)", "stroke-width": 1 }));
+      const t = el("text", { x: x, y: M.t + rulerH - 9, "text-anchor": "middle", "font-size": 10, fill: "var(--muted)" });
+      t.textContent = (bp / 1000) + " kb"; svg.appendChild(t);
+    }
+
+    for (const key of ["k27", "pol2"]) {
+      const L = lanes[key], baseY = L.y + laneH;
+      if (!shown[key]) continue;
+      // peak lozenges above the lane
+      L.peaks.forEach(([a, b]) => {
+        svg.appendChild(el("rect", {
+          x: bpToX(a), y: L.y - peakH - 2, width: Math.max(2, bpToX(b) - bpToX(a)),
+          height: peakH, rx: 3, fill: "var(--peak)", opacity: 0.85,
+        }));
+      });
+      // baseline
+      svg.appendChild(el("line", { x1: M.l, y1: baseY, x2: W - M.r, y2: baseY, stroke: "var(--hairline)", "stroke-width": 1 }));
+      // area + outline
+      svg.appendChild(el("path", { d: areaPath(L.sig, baseY), fill: L.color, "fill-opacity": 0.16 }));
+      let ol = `M ${bpToX(xs[0])} ${(baseY - L.sig[0] * (laneH - 8)).toFixed(1)}`;
+      for (let i = 1; i < N; i++) ol += ` L ${bpToX(xs[i]).toFixed(1)} ${(baseY - L.sig[i] * (laneH - 8)).toFixed(1)}`;
+      svg.appendChild(el("path", { d: ol, fill: "none", stroke: L.color, "stroke-width": 1.4 }));
+      // label + peak count
+      const lab = el("text", { x: M.l - 10, y: L.y + laneH / 2, "text-anchor": "end", "font-size": 12, fill: "var(--ink)", "font-weight": 600 });
+      lab.textContent = L.label; svg.appendChild(lab);
+      const cnt = el("text", { x: M.l - 10, y: L.y + laneH / 2 + 15, "text-anchor": "end", "font-size": 10, fill: "var(--muted)" });
+      cnt.textContent = L.peaks.length + " peaks"; svg.appendChild(cnt);
+    }
+
+    // crosshair + dots (hidden until hover)
+    const ch = el("line", { class: "crosshair", y1: M.t + rulerH, y2: VB_H - M.b, stroke: "var(--ink)", "stroke-width": 1, "stroke-dasharray": "3 3", opacity: 0 });
+    ch.id = "crosshair"; svg.appendChild(ch);
+    for (const key of ["k27", "pol2"]) {
+      const dot = el("circle", { class: "dot", r: 3.2, fill: lanes[key].color, opacity: 0, stroke: "#fff", "stroke-width": 1 });
+      dot.id = "dot-" + key; svg.appendChild(dot);
+    }
+  }
+
+  // ---- interaction: crosshair scrub ----
+  const readout = document.getElementById("readout");
+  function svgX(evt) {
+    const r = svg.getBoundingClientRect();
+    return ((evt.clientX - r.left) / r.width) * W;
+  }
+  function move(evt) {
+    const x = svgX(evt);
+    if (x < M.l || x > W - M.r) return hide();
+    const bp = Math.round(((x - M.l) / plotW) * LEN);
+    const i = Math.min(N - 1, Math.max(0, Math.round(bp / step)));
+    const ch = document.getElementById("crosshair");
+    ch.setAttribute("x1", bpToX(xs[i])); ch.setAttribute("x2", bpToX(xs[i])); ch.setAttribute("opacity", 1);
+    const parts = [];
+    for (const key of ["k27", "pol2"]) {
+      const dot = document.getElementById("dot-" + key), L = lanes[key];
+      if (shown[key]) {
+        const y = (L.y + laneH) - L.sig[i] * (laneH - 8);
+        dot.setAttribute("cx", bpToX(xs[i])); dot.setAttribute("cy", y); dot.setAttribute("opacity", 1);
+        parts.push(`${L.label} <b>${L.sig[i].toFixed(2)}</b>`);
+      } else { dot.setAttribute("opacity", 0); }
+    }
+    readout.innerHTML = `<b>${xs[i].toLocaleString()}</b> bp &nbsp; ` + parts.join(" &nbsp; ");
+  }
+  function hide() {
+    const ch = document.getElementById("crosshair");
+    if (ch) ch.setAttribute("opacity", 0);
+    ["k27", "pol2"].forEach((k) => { const d = document.getElementById("dot-" + k); if (d) d.setAttribute("opacity", 0); });
+    readout.innerHTML = "move over the tracks &rarr;";
+  }
+  svg.addEventListener("mousemove", move);
+  svg.addEventListener("mouseleave", hide);
+  svg.addEventListener("touchmove", (e) => { if (e.touches[0]) move(e.touches[0]); }, { passive: true });
+
+  // ---- track toggles ----
+  document.querySelectorAll(".toggle").forEach((t) => {
+    const key = t.dataset.track;
+    const flip = () => { shown[key] = !shown[key]; t.setAttribute("aria-pressed", shown[key]); render(); };
+    t.addEventListener("click", flip);
+    t.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); flip(); } });
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
