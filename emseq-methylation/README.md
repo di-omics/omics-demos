@@ -41,6 +41,28 @@ condition  cpgs_covered  mean_coverage  global_mCpG
 
 ![QC plots](assets/qc_plots.png)
 
+## How it works
+
+The core QC metrics come from spike-in controls and per-context methylation fractions (from `analyze.py`):
+
+```python
+def meth_frac(df):
+    m, u = df.meth_reads.sum(), df.unmeth_reads.sum()
+    return m / (m + u)
+
+conv_eff = 1 - meth_frac(load("control_lambda.tsv"))
+protection = meth_frac(load("control_puc19.tsv"))
+
+for cond, f in [("10 ng", "meth_10ng.tsv"), ("0.1 ng", "meth_0p1ng.tsv")]:
+    d = load(f)
+    cpg = d[d.context == "CpG"]
+    chg = d[d.context == "CHG"]
+    chh = d[d.context == "CHH"]
+    # mCHG and mCHH sit near zero -- conversion-QC signal
+```
+
+Conversion efficiency is `1 - mCpG(lambda)`; CpG protection is `mCpG(pUC19)`.
+
 ## Layout
 
 ```

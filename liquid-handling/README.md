@@ -47,6 +47,30 @@ backend behind typed confirmations - the protocol plan is unchanged.
 
 ![Deck map and per-step transfers](assets/libprep_qc.png)
 
+## How it works
+
+The entire protocol is driven by a single transfer plan (from `run_protocol.py`). Each row is one 8-channel transfer:
+
+```python
+PLAN = [
+    ("PCR1 master mix", "transfer", "PCR1 master mix",
+     "reagent", C[1], "work", C[1], PCR1_MM, "p50"),
+
+    ("SPRI cleanup", "transfer", "SPRI beads 1.8x",
+     "reservoir", C[1], "work", C[1], SPRI, "p300"),
+    ("SPRI cleanup", "transfer", "bead-bound reaction",
+     "work", C[1], "magnet", C[1], BEAD_MOVE, "p300"),
+    ("SPRI cleanup", "transfer", "supernatant",
+     "magnet", C[1], "waste", C[1], SUP, "p300"),
+    # ... 2x ethanol wash, elute, collect ...
+
+    ("PCR2 index MM", "transfer", "PCR2 index master mix",
+     "reagent", C[2], "work", C[2], PCR2_MM, "p50"),
+]
+```
+
+The plan is both executed on the deck and exported as a worklist, so the two can never drift.
+
 ## Files
 
 ```

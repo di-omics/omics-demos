@@ -33,6 +33,29 @@ make chromatin
 
 Swap the in-browser generator for a real `bedGraph` to view your own tracks.
 
+## How it works
+
+Peak calling by threshold + adjacent-bin merge (from `index.html`):
+
+```javascript
+function callPeaks(sig, thr) {
+  const peaks = []; let start = null;
+  for (let i = 0; i < sig.length; i++) {
+    if (sig[i] >= thr && start === null) start = i;
+    if ((sig[i] < thr || i === sig.length - 1) && start !== null) {
+      const end = sig[i] < thr ? i - 1 : i;
+      if (end - start >= 1) peaks.push([fullXs[start], fullXs[end]]);
+      start = null;
+    }
+  }
+  return peaks;
+}
+const peaksK = callPeaks(K, 0.45);  // H3K27me3
+const peaksP = callPeaks(P, 0.30);  // Pol II S5p
+```
+
+Bins above threshold are merged into contiguous peak regions, drawn as lozenges above each track.
+
 ## Files
 
 ```

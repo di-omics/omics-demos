@@ -42,6 +42,31 @@ noise, which is the honest outcome.
 
 ![PCA and volcano](assets/rnaseq_qc.png)
 
+## How it works
+
+Per-gene Welch t-test with Benjamini-Hochberg FDR correction (from `analyze.py`):
+
+```python
+def bh(p):
+    p = np.asarray(p); n = len(p); order = np.argsort(p)
+    q = np.empty(n); q[order] = (p[order] * n / (np.arange(n) + 1))
+    ranked = q[order]
+    ranked = np.minimum.accumulate(ranked[::-1])[::-1]
+    q[order] = np.clip(ranked, 0, 1)
+    return q
+
+# per-gene Welch t-test, ctrl vs treat
+ctrl = meta.query("condition=='ctrl'")["sample"].values
+treat = meta.query("condition=='treat'")["sample"].values
+a, b = logf[ctrl].values, logf[treat].values
+t, p = stats.ttest_ind(b, a, axis=1, equal_var=False)
+lfc = b.mean(1) - a.mean(1)
+res["padj"] = bh(res.pval.values)
+res["called"] = (res.padj < FDR) & (res.log2fc.abs() >= LFC)
+```
+
+Genes are called DE at FDR < 0.05 with |log2FC| >= 1, then scored against the planted truth.
+
 ## Files
 
 ```

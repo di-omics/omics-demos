@@ -38,6 +38,30 @@ BC04         299      2146.0          192.0
 
 ![Flex QC](assets/flex_qc.png)
 
+## How it works
+
+Cell calling via max-curvature on the log-log barcode-rank curve (from `analyze.py`):
+
+```python
+def find_knee(ranked_umis):
+    n = len(ranked_umis)
+    x = np.log10(np.arange(1, n + 1))
+    y = np.log10(ranked_umis.clip(min=1))
+    win = max(5, n // 50)
+    y_smooth = np.convolve(y, np.ones(win) / win, mode="same")
+    # discrete curvature: |y''| / (1 + y'^2)^(3/2)
+    dy = np.gradient(y_smooth, x)
+    ddy = np.gradient(dy, x)
+    curvature = np.abs(ddy) / (1 + dy ** 2) ** 1.5
+    margin = max(10, n // 20)
+    curvature[:margin] = 0
+    curvature[-margin:] = 0
+    knee_idx = np.argmax(curvature)
+    return knee_idx, ranked_umis[knee_idx]
+```
+
+Returns the rank and UMI count at the knee point. Barcodes above this threshold are called as cells.
+
 ## Files
 
 ```

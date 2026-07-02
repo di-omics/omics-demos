@@ -34,6 +34,30 @@ the 1-mismatch collapse recovers 2,999 - within one of the 3,000 truth.
 
 ![UMI QC](assets/umi_qc.png)
 
+## How it works
+
+Directional 1-mismatch collapse with union-find (from `analyze.py`). High-count UMIs absorb low-count neighbors:
+
+```python
+def collapse_directional(umi_counts):
+    umis = sorted(umi_counts, key=lambda u: -umi_counts[u])
+    parent = {u: u for u in umis}
+
+    def find(u):
+        while parent[u] != u:
+            parent[u] = parent[parent[u]]; u = parent[u]
+        return u
+
+    for a, b in combinations(umis, 2):
+        if hamming1(a, b):
+            hi, lo = (a, b) if umi_counts[a] >= umi_counts[b] else (b, a)
+            if umi_counts[hi] >= 2 * umi_counts[lo] - 1:
+                parent[find(lo)] = find(hi)
+    return len({find(u) for u in umis})
+```
+
+Returns the number of unique molecules after collapsing sequencing-error UMIs into their parent.
+
 ## Files
 
 ```
