@@ -1,94 +1,82 @@
 #!/usr/bin/env python3
-"""Figures for the liquid-handling demo: STARlet deck map + plate heatmaps.
-
-Writes assets/normalization_qc.png.
+"""Figures for the library-prep demo: Hamilton STAR deck map + per-step transfers.
+Writes assets/libprep_qc.png in the shared baby-pastel / Manrope style.
 """
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from style.plot_style import set_style, finalize, PALETTE, OUTLINE, OUTLINE_WIDTH
-set_style()
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import omics_style as S; S.apply()
 
-import numpy as np, pandas as pd
+import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyBboxPatch, Rectangle
 from matplotlib.gridspec import GridSpec
-from pathlib import Path
 
 ROOT = Path(__file__).parent
 DATA, ASSETS = ROOT / "data", ROOT / "assets"; ASSETS.mkdir(exist_ok=True)
-ROWS = list("ABCDEFGH")
-FLAG = PALETTE["coral"]
+PHASE_COLOR = {"PCR1 master mix": "blue", "SPRI cleanup": "teal", "PCR2 index MM": "pink"}
 
 
-def grid(df, value):
-    return df.pivot(index="row", columns="col", values=value).reindex(ROWS).values
+def box(ax, x, y, w, h, key, label, sub=None, fs=8.5):
+    ax.add_patch(FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.02,rounding_size=0.12",
+                 fc=S.PALETTE[key], ec=S.OUTLINE[key], lw=1.1, alpha=0.9))
+    ax.text(x + w / 2, y + h / 2 + (0.14 if sub else 0), label, ha="center", va="center",
+            fontsize=fs, color=S.INK, weight="medium")
+    if sub:
+        ax.text(x + w / 2, y + h / 2 - 0.32, sub, ha="center", va="center",
+                fontsize=6.8, color=S.MUTED)
 
 
 def deck_map(ax):
-    ax.set_xlim(0, 22); ax.set_ylim(0, 6); ax.axis("off")
-    ax.add_patch(Rectangle((0, 0), 22, 6, fc=PALETTE["bg"], ec=OUTLINE, lw=OUTLINE_WIDTH))
-    ax.text(0.2, 5.6, "Hamilton STARlet deck", fontsize=9, color=PALETTE["muted"],
-            fontweight="bold")
+    ax.set_xlim(0, 24); ax.set_ylim(0, 6); ax.axis("off")
+    ax.add_patch(Rectangle((0, 0), 24, 6, fc="#F7F8FA", ec=S.HAIR, lw=1))
+    ax.text(0.3, 5.55, "Hamilton STAR deck", fontsize=9.5, color=S.INK, weight="semibold")
 
-    # tip carrier (rails 1): 3 racks
-    ax.add_patch(FancyBboxPatch((0.6, 0.6), 4, 4.4,
-                 boxstyle="round,pad=0.05,rounding_size=0.15",
-                 fc="white", ec=PALETTE["peach"], lw=OUTLINE_WIDTH))
-    ax.text(2.6, 5.15, "tip carrier", ha="center", fontsize=7.5, color=PALETTE["muted"])
-    for i, lab in enumerate(["tips: diluent", "tips: sample", "tips: pool"]):
-        ax.add_patch(Rectangle((0.9, 0.9 + i * 1.35), 3.4, 1.1,
-                     fc=PALETTE["peach"], alpha=0.25, ec=OUTLINE, lw=OUTLINE_WIDTH))
-        ax.text(2.6, 1.45 + i * 1.35, lab, ha="center", va="center",
-                fontsize=7.5, color=PALETTE["ink"])
+    # tip carrier (2 racks)
+    ax.add_patch(FancyBboxPatch((0.5, 0.5), 4.4, 4.4, boxstyle="round,pad=0.05,rounding_size=0.15",
+                 fc="white", ec=S.MUTED, lw=1))
+    ax.text(2.7, 5.05, "tip carrier", ha="center", fontsize=7.2, color=S.MUTED)
+    box(ax, 0.85, 2.75, 3.7, 1.75, "peach", "p50 tips")
+    box(ax, 0.85, 0.85, 3.7, 1.75, "gold", "p300 tips")
 
-    # plate carrier (rails 10): 4 plates
-    ax.add_patch(FancyBboxPatch((6, 0.6), 15, 4.4,
-                 boxstyle="round,pad=0.05,rounding_size=0.15",
-                 fc="white", ec=PALETTE["blue"], lw=OUTLINE_WIDTH))
-    ax.text(13.5, 5.15, "plate carrier", ha="center", fontsize=7.5, color=PALETTE["muted"])
-    plates = ["samples\n(source)", "diluent", "normalized\n(target)", "pool\n(8 fractions)"]
-    for i, lab in enumerate(plates):
-        ax.add_patch(Rectangle((6.4 + i * 3.6, 1.1), 3.1, 3.2,
-                     fc=PALETTE["blue"], alpha=0.18, ec=OUTLINE, lw=OUTLINE_WIDTH))
-        ax.text(6.4 + i * 3.6 + 1.55, 2.7, lab, ha="center", va="center",
-                fontsize=7.5, color=PALETTE["ink"])
-        ax.text(6.4 + i * 3.6 + 1.55, 1.35, "96", ha="center", fontsize=6.5,
-                color=PALETTE["muted"])
+    # plate carrier (5 plates)
+    ax.add_patch(FancyBboxPatch((6, 0.5), 17.5, 4.4, boxstyle="round,pad=0.05,rounding_size=0.15",
+                 fc="white", ec=S.MUTED, lw=1))
+    ax.text(14.75, 5.05, "plate carrier", ha="center", fontsize=7.2, color=S.MUTED)
+    plates = [("lav", "reagent", "PCR1 / PCR2 MM"), ("blue", "work", "samples + eluate"),
+              ("teal", "magnet", "SPRI cleanup"), ("green", "reservoir", "beads / EtOH / EB"),
+              ("pink", "waste", "spent liquid")]
+    for i, (key, name, sub) in enumerate(plates):
+        box(ax, 6.35 + i * 3.35, 1.05, 2.95, 3.3, key, name, sub=sub)
 
 
-def heat(ax, M, title, cmap, flags=None, unit=""):
-    im = ax.imshow(M, cmap=cmap, aspect="auto")
-    ax.set_xticks(range(12)); ax.set_xticklabels(range(1, 13))
-    ax.set_yticks(range(8)); ax.set_yticklabels(ROWS)
-    ax.set_title(title)
-    if flags is not None:
-        for (r, c) in flags:
-            ax.add_patch(Rectangle((c - 0.5, r - 0.5), 1, 1, fill=False,
-                         ec=FLAG, lw=1.6))
-    cb = plt.colorbar(im, ax=ax, fraction=0.045, pad=0.03)
-    cb.ax.tick_params(labelsize=7); cb.set_label(unit, fontsize=7)
+def transfers(ax):
+    wl = pd.read_csv(DATA / "worklist.csv")
+    wl = wl.iloc[::-1].reset_index(drop=True)   # first step on top
+    y = range(len(wl))
+    colors = [S.PALETTE[PHASE_COLOR[p]] for p in wl.phase]
+    edges = [S.OUTLINE[PHASE_COLOR[p]] for p in wl.phase]
+    ax.barh(list(y), wl.volume_ul, color=colors, edgecolor=edges, height=0.66)
+    ax.set_yticks(list(y)); ax.set_yticklabels(wl.reagent, fontsize=8)
+    ax.set_xlabel("volume per channel (µL)"); ax.set_xlim(0, wl.volume_ul.max() * 1.18)
+    ax.set_title("Transfers by step (column-1, 8-channel)")
+    ax.grid(axis="y", visible=False)
+    for i, v in zip(y, wl.volume_ul):
+        ax.text(v + wl.volume_ul.max() * 0.02, i, f"{v:g}", va="center", fontsize=7.5, color=S.MUTED)
+    # phase legend
+    handles = [plt.Line2D([0], [0], marker="s", ls="", markersize=8,
+               mfc=S.PALETTE[c], mec=S.OUTLINE[c]) for c in PHASE_COLOR.values()]
+    ax.legend(handles, list(PHASE_COLOR.keys()), loc="lower right", fontsize=8)
 
 
 def main():
-    df = pd.read_csv(DATA / "normalization_report.tsv", sep="\t")
-    flags = [(ROWS.index(r.row), r.col - 1) for _, r in df[df.status != "ok"].iterrows()]
-
-    fig = plt.figure(figsize=(10, 6.2))
-    gs = GridSpec(2, 2, height_ratios=[1.05, 1.25], hspace=0.42, wspace=0.28)
-    deck_map(fig.add_subplot(gs[0, :]))
-
-    from matplotlib.colors import LinearSegmentedColormap
-    blue_cmap = LinearSegmentedColormap.from_list("pblu", ["white", PALETTE["blue"]])
-    mint_cmap = LinearSegmentedColormap.from_list("pmnt", [PALETTE["cream"], PALETTE["mint"]])
-
-    heat(fig.add_subplot(gs[1, 0]), grid(df, "sample_ul"), "Sample volume per well",
-         blue_cmap, unit="µL")
-    heat(fig.add_subplot(gs[1, 1]), grid(df, "out_mass_ng"),
-         "Normalized output mass (flagged outlined)",
-         mint_cmap, flags=flags, unit="ng")
-    fig.suptitle("liquid-handling \u2013 96-well normalization on a Hamilton STARlet",
-                 fontsize=11, y=0.98)
-    out = ASSETS / "normalization_qc.png"; fig.savefig(out, dpi=130, bbox_inches="tight")
+    fig = plt.figure(figsize=(10, 7))
+    gs = GridSpec(2, 1, height_ratios=[1, 1.35], figure=fig)
+    deck_map(fig.add_subplot(gs[0]))
+    transfers(fig.add_subplot(gs[1]))
+    fig.suptitle("liquid-handling - amplicon-seq library prep on a Hamilton STAR (PyLabRobot sim)",
+                 fontsize=12, weight="semibold")
+    out = ASSETS / "libprep_qc.png"; fig.savefig(out)
     print("wrote", out)
 
 

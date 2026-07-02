@@ -4,6 +4,3 @@ __pycache__/
 */__pycache__/
 *.pyc
 .DS_Store
-node_modules/
-package.json
-package-lock.json

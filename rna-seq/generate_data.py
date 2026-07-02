@@ -1,58 +1,44 @@
 #!/usr/bin/env python3
-"""Synthesize a gene x sample count matrix for bulk/single-blastocyst RNA-seq.
+"""Synthesize a bulk RNA-seq count matrix: two conditions, a planted DE gene set.
 
-Two conditions (control vs treatment), 4 replicates each. A planted set of DE
-genes is spiked in so downstream analysis can measure recovery. All data is
-synthetic.
+Gene baselines are drawn log-normally; a subset gets a real log2 fold-change in the
+treated arm. Counts are negative-binomial (gamma-Poisson) with per-sample library
+size variation, so the demo has to normalize before testing. All data is synthetic.
 """
-import numpy as np
-import pandas as pd
+import numpy as np, pandas as pd
 from pathlib import Path
 
-RNG = np.random.default_rng(42)
+RNG = np.random.default_rng(13)
 OUT = Path(__file__).parent / "data"; OUT.mkdir(exist_ok=True)
 
-N_GENES = 2000
-N_REPS = 4
-CONDITIONS = ["control", "treatment"]
-N_DE = 80  # planted differentially-expressed genes (40 up, 40 down)
-DE_FOLD = 3.0  # fold-change for planted DE genes
+N_GENES, N_DE, N_REP, DISP = 2000, 120, 5, 0.12
 
 if __name__ == "__main__":
     genes = [f"gene_{i:04d}" for i in range(N_GENES)]
-    samples = [f"{cond}_rep{r}" for cond in CONDITIONS for r in range(1, N_REPS + 1)]
+    base = RNG.lognormal(3.6, 1.2, N_GENES)               # per-gene baseline mean
 
-    # baseline mean expression per gene (log-normal)
-    base_mu = RNG.lognormal(mean=4.0, sigma=1.5, size=N_GENES)
+    log2fc = np.zeros(N_GENES)
+    de_idx = RNG.choice(N_GENES, N_DE, replace=False)
+    fc = RNG.normal(0, 2.4, N_DE)
+    fc[np.abs(fc) < 1.3] += np.sign(fc[np.abs(fc) < 1.3] + 1e-9) * 1.3   # push clear of |1|
+    log2fc[de_idx] = fc
 
-    # build count matrix
-    counts = {}
-    de_up = set(range(0, N_DE // 2))
-    de_down = set(range(N_DE // 2, N_DE))
-    de_genes = de_up | de_down
+    samples, cond = [], []
+    for c in ["ctrl", "treat"]:
+        for r in range(N_REP):
+            samples.append(f"{c}_{r+1}"); cond.append(c)
+    lib = RNG.uniform(0.8, 1.25, len(samples))            # library-size factors
 
-    for cond in CONDITIONS:
-        mu = base_mu.copy()
-        if cond == "treatment":
-            mu[list(de_up)] *= DE_FOLD
-            mu[list(de_down)] /= DE_FOLD
-        for r in range(N_REPS):
-            sample = f"{cond}_rep{r + 1}"
-            # add biological variability then Poisson-sample
-            lam = mu * RNG.gamma(10, 0.1, N_GENES)  # gene-wise noise
-            counts[sample] = RNG.poisson(lam)
+    mat = np.zeros((N_GENES, len(samples)), dtype=int)
+    for s, (c, lf) in enumerate(zip(cond, lib)):
+        eff = base * (2.0 ** (log2fc if c == "treat" else 0)) * lf
+        rate = RNG.gamma(shape=1.0 / DISP, scale=eff * DISP)   # gamma-Poisson = NB
+        mat[:, s] = RNG.poisson(rate)
 
-    mat = pd.DataFrame(counts, index=genes)
-    mat.index.name = "gene"
-    mat.to_csv(OUT / "counts.tsv", sep="\t")
-
-    # truth table
-    truth = pd.DataFrame({
-        "gene": genes,
-        "is_de": [i in de_genes for i in range(N_GENES)],
-        "direction": ["up" if i in de_up else "down" if i in de_down else "none"
-                       for i in range(N_GENES)],
-    })
-    truth.to_csv(OUT / "truth.tsv", sep="\t", index=False)
-    print(f"wrote {mat.shape[0]} genes x {mat.shape[1]} samples -> {OUT / 'counts.tsv'}")
-    print(f"planted DE genes: {N_DE} ({N_DE // 2} up, {N_DE // 2} down, fold={DE_FOLD})")
+    pd.DataFrame(mat, index=genes, columns=samples).rename_axis("gene").to_csv(
+        OUT / "counts.tsv", sep="\t")
+    pd.DataFrame({"sample": samples, "condition": cond}).to_csv(
+        OUT / "samples.tsv", sep="\t", index=False)
+    pd.DataFrame({"gene": [genes[i] for i in de_idx], "log2fc_true": log2fc[de_idx].round(3)}
+                 ).to_csv(OUT / "truth_de.tsv", sep="\t", index=False)
+    print(f"wrote {N_GENES} genes x {len(samples)} samples, {N_DE} planted DE -> {OUT/'counts.tsv'}")

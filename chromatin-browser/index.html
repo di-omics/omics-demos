@@ -4,36 +4,39 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>chromatin-browser</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap');
   :root {
-    --bg: #FAFBFC;
+    --bg: #F6F8FA;
     --panel: #FFFFFF;
-    --ink: #14181D;
-    --muted: #5C6570;
-    --hairline: #D6DBE1;
-    --grid: #E9ECF0;
-    --k27: #C8B8E8;   /* H3K27me3 - lavender pastel */
-    --pol2: #A8E8D0;  /* Pol II S5p - mint pastel */
-    --peak: #E8A8C0;  /* called peaks - rose pastel */
-    --outline: #6B7280;
-    --outline-w: 0.7px;
+    --ink: #3B4048;
+    --muted: #7A828C;
+    --hairline: #DCE1E7;
+    --grid: #EDF0F3;
+    --k27: #5E8DBF;        /* H3K27me3 - repressive (baby blue) */
+    --k27-fill: #A9C9E8;
+    --pol2: #74A860;       /* Pol II S5p - active (baby green) */
+    --pol2-fill: #B4DBA6;
+    --peak: #D07A90;       /* called peaks (baby pink) */
+    --peak-fill: #F4B8C6;
   }
   * { box-sizing: border-box; }
   body {
     margin: 0; background: var(--bg); color: var(--ink);
-    font-family: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-family: 'Manrope', system-ui, -apple-system, sans-serif;
     line-height: 1.4; padding: 32px 20px;
   }
   .wrap { max-width: 960px; margin: 0 auto; }
   .eyebrow {
-    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-family: 'Manrope', system-ui, sans-serif;
     font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
     color: var(--muted); margin: 0 0 6px;
   }
   h1 { font-size: 26px; letter-spacing: -0.01em; margin: 0 0 6px; font-weight: 650; }
   .sub { color: var(--muted); font-size: 14px; margin: 0 0 2px; max-width: 62ch; }
-  .synthetic { font-family: ui-monospace, monospace; font-size: 11px; color: var(--peak); margin: 8px 0 22px; }
+  .synthetic { font-family: 'Manrope', system-ui, sans-serif; font-size: 11px; color: var(--peak); margin: 8px 0 22px; }
 
   .panel {
     background: var(--panel); border: 1px solid var(--hairline);
@@ -41,7 +44,7 @@
   }
   .controls {
     display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px;
-    margin-bottom: 12px; font-family: ui-monospace, monospace; font-size: 12px;
+    margin-bottom: 12px; font-family: 'Manrope', system-ui, sans-serif; font-size: 12px;
   }
   .toggle {
     display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
@@ -52,12 +55,12 @@
   .toggle .sw { width: 11px; height: 11px; border-radius: 3px; }
   .toggle[aria-pressed="false"] { opacity: 0.4; }
   .readout {
-    margin-left: auto; font-family: ui-monospace, monospace; font-size: 12px;
+    margin-left: auto; font-family: 'Manrope', system-ui, sans-serif; font-size: 12px;
     color: var(--muted); white-space: nowrap;
   }
   .readout b { color: var(--ink); font-weight: 600; }
   svg { display: block; width: 100%; height: auto; touch-action: none; }
-  text { font-family: "Manrope", system-ui, sans-serif; }
+  text { font-family: 'Manrope', system-ui, sans-serif; }
   .foot {
     color: var(--muted); font-size: 12px; margin-top: 14px; max-width: 70ch;
   }
@@ -165,8 +168,8 @@
   const plotW = W - M.l - M.r;
   const laneH = 96, laneGap = 16, rulerH = 22, peakH = 12;
   const lanes = {
-    k27:  { y: M.t + rulerH + peakH, sig: K, color: "var(--k27)", label: "H3K27me3", peaks: peaksK },
-    pol2: { y: M.t + rulerH + peakH + laneH + laneGap, sig: P, color: "var(--pol2)", label: "Pol II S5p", peaks: peaksP },
+    k27:  { y: M.t + rulerH + peakH, sig: K, color: "var(--k27)", fill: "var(--k27-fill)", label: "H3K27me3", peaks: peaksK },
+    pol2: { y: M.t + rulerH + peakH + laneH + laneGap, sig: P, color: "var(--pol2)", fill: "var(--pol2-fill)", label: "Pol II S5p", peaks: peaksP },
   };
   const bpToX = (bp) => M.l + (bp / LEN) * plotW;
   const svg = document.getElementById("browser");
@@ -205,13 +208,13 @@
       L.peaks.forEach(([a, b]) => {
         svg.appendChild(el("rect", {
           x: bpToX(a), y: L.y - peakH - 2, width: Math.max(2, bpToX(b) - bpToX(a)),
-          height: peakH, rx: 3, fill: "var(--peak)", opacity: 0.85,
+          height: peakH, rx: 3, fill: "var(--peak-fill)", stroke: "var(--peak)", "stroke-width": 1,
         }));
       });
       // baseline
       svg.appendChild(el("line", { x1: M.l, y1: baseY, x2: W - M.r, y2: baseY, stroke: "var(--hairline)", "stroke-width": 1 }));
       // area + outline
-      svg.appendChild(el("path", { d: areaPath(L.sig, baseY), fill: L.color, "fill-opacity": 0.16 }));
+      svg.appendChild(el("path", { d: areaPath(L.sig, baseY), fill: L.fill, "fill-opacity": 0.55 }));
       let ol = `M ${bpToX(xs[0])} ${(baseY - L.sig[0] * (laneH - 8)).toFixed(1)}`;
       for (let i = 1; i < N; i++) ol += ` L ${bpToX(xs[i]).toFixed(1)} ${(baseY - L.sig[i] * (laneH - 8)).toFixed(1)}`;
       svg.appendChild(el("path", { d: ol, fill: "none", stroke: L.color, "stroke-width": 1.4 }));

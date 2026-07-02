@@ -1,8 +1,8 @@
 # omics-demos
 
 Small, self-contained toy examples from an omics + lab-automation stack - sequencing
-QC, single-cell/probe RNA, epigenomics, cross-species transcriptomics, and Hamilton
-liquid handling. Each demo runs in one command, uses only **synthetic data**, and shows
+QC, single-cell/probe RNA, epigenomics, cross-species transcriptomics, bulk RNA-seq, and
+Hamilton liquid handling. Each demo runs in one command, uses only **synthetic data**, and shows
 exactly one idea.
 
 Clean-room by design: no proprietary data or code - every dataset is generated on the fly.
@@ -17,12 +17,12 @@ make emseq        # EM-seq methylation QC
 make umi          # UMI deduplication
 make species      # cross-species transcriptome
 make flex         # 10x Flex cell calling
-make liquid       # Hamilton STARlet normalization (PyLabRobot sim)
+make rna          # bulk RNA-seq differential expression
+make liquid       # Hamilton STAR library prep (PyLabRobot sim)
 make chromatin    # chromatin browser preview
-make rna          # bulk RNA-seq DE analysis
 ```
 
-Python 3.10+. `pylabrobot` is only needed for the `liquid` demo.
+Python 3.10+. `pylabrobot` (liquid) and `scipy` (rna) are the only demo-specific deps.
 
 ---
 
@@ -66,11 +66,22 @@ design, scored against ground truth.
 
 ---
 
-### liquid-handling - Hamilton STARlet normalization
-DNA normalization to a target mass, executed on a STARlet deck via PyLabRobot's simulation
-backend - the full protocol runs and logs with no hardware.
+### rna-seq - bulk differential expression
+CPM normalization, PCA, and a Welch t-test with Benjamini-Hochberg FDR on a synthetic
+two-condition count matrix, scored against a planted truth set of DE genes.
 
-![liquid](liquid-handling/assets/normalization_qc.png)
+![rna-seq](rna-seq/assets/rnaseq_qc.png)
+
+[-> rna-seq/](rna-seq/)
+
+---
+
+### liquid-handling - targeted PCR library prep on a Hamilton STAR
+PCR1 master mix, SPRI bead cleanup, and PCR2 indexing, run column-by-column on a Hamilton
+STAR deck via PyLabRobot's simulation backend - the full protocol executes and logs with
+no hardware. Generic, illustrative volumes.
+
+![liquid](liquid-handling/assets/libprep_qc.png)
 
 [-> liquid-handling/](liquid-handling/)
 
@@ -83,16 +94,6 @@ crosshair readout and called peaks. Opens with no server.
 ![chromatin](chromatin-browser/assets/preview.png)
 
 [-> chromatin-browser/](chromatin-browser/)
-
----
-
-### rna-seq - bulk RNA-seq differential expression
-CPM normalization, PCA, and per-gene t-test with BH correction on a synthetic
-gene x sample count matrix with planted DE genes - measures recovery rate.
-
-![rna-seq](rna-seq/assets/rna_qc.png)
-
-[-> rna-seq/](rna-seq/)
 
 ---
 

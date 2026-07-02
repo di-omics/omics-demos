@@ -1,40 +1,59 @@
 # rna-seq
 
-Bulk/single-blastocyst RNA-seq mini-pipeline on synthetic counts: normalize,
-PCA, per-gene differential expression testing with multiple-testing correction.
+A small bulk RNA-seq pipeline: synthetic count matrix in, PCA and a differential
+expression call out, scored against a known planted truth so you can see how much
+signal the test actually recovers.
 
-All data is synthetic - no real counts.
+All data is synthetic - no real samples.
 
 ## Run
 
 ```bash
-# from the repo root
-pip install -r requirements.txt
+pip install -r requirements.txt   # includes scipy
 make rna
 ```
 
 ## What it does
 
-- Generates a gene x sample count matrix (2000 genes, 2 conditions x 4 replicates) with 80 planted DE genes (40 up, 40 down at 3x fold-change).
-- CPM-normalizes and log2-transforms counts, then runs PCA to check condition separation.
-- Runs a per-gene Welch t-test with Benjamini-Hochberg correction and reports how many planted DE genes are recovered.
+1. **Simulate** - 2,000 genes across two conditions (5 replicates each). Gene
+   baselines are log-normal; a planted set of 120 genes gets a real log2 fold-change
+   in the treated arm. Counts are negative-binomial with per-sample library-size
+   variation, so normalization matters.
+2. **Normalize** - counts to CPM, then log2(CPM+1).
+3. **PCA** - on the top-variable genes (numpy SVD), to check the samples separate by
+   condition rather than by depth or noise.
+4. **Test** - per-gene Welch t-test, Benjamini-Hochberg FDR, and call DE at
+   FDR < 0.05 with |log2FC| >= 1.
+5. **Score** - recall, precision, and sign agreement against the planted truth.
 
 ## Example output
 
 ```
-PC1 explains 21.5%, PC2 explains 14.6%
-Significant genes (padj < 0.05): 107
-Planted DE genes: 80
-Recovered: 61 / 80 (76%)
-False positives: 46
+=== RNA-seq differential expression (synthetic) ===
+2000 genes x 10 samples  |  1970 genes pass expression filter
+PCA: PC1 42.5% var, PC2 9.9% var
+called DE: 78 genes at FDR<0.05, |log2FC|>=1.0
+vs 120 planted truth -> recall 57.5%, precision 88.5%, sign agreement 100.0%
 ```
 
-![RNA-seq QC](assets/rna_qc.png)
+PC1 captures the condition split, and the test recovers most of the planted DE at
+high precision - the misses are the small-effect genes that n=5 can't separate from
+noise, which is the honest outcome.
+
+![PCA and volcano](assets/rnaseq_qc.png)
 
 ## Files
 
 ```
-generate_data.py   synthesize gene x sample count matrix with planted DE
-analyze.py         CPM normalize, PCA, Welch t-test + BH correction
-plots.py           PCA scatter + volcano plot
+generate_data.py   simulate the count matrix + planted truth
+analyze.py         CPM/log normalize, PCA, Welch t-test + BH FDR, score vs truth
+plots.py           sample PCA + volcano
+```
+
+## Outputs
+
+```
+data/de_results.tsv   per-gene log2FC, p, adjusted p, called flag
+data/pca.tsv          per-sample PC1/PC2 + condition
+assets/rnaseq_qc.png  PCA scatter + volcano
 ```

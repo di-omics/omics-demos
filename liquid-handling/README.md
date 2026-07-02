@@ -1,72 +1,65 @@
 # liquid-handling
 
-A realistic DNA normalization run on a Hamilton STARlet, driven by **PyLabRobot** in
-simulation (chatterbox) mode - the whole protocol executes and logs every deck action
-with **no hardware**. This is the automation layer the rest of the omics stack sits on:
-you hand it a plate of quantified samples, it gives you a normalized plate, a pooled
-library, and a worklist.
+Targeted PCR library prep on a Hamilton STAR, driven by **PyLabRobot** in simulation
+(chatterbox) mode - the whole protocol executes and logs every deck action with **no
+hardware**. This is the automation layer under the rest of the omics stack: hand it a
+plate of templates, it runs library prep and hands back an indexed library plus a
+worklist.
 
-All data is synthetic - no real samples.
+The volumes and deck layout here are **generic and illustrative**, not a validated
+method. All data is synthetic - no real samples.
 
 ## Run
 
 ```bash
-# from the repo root
 pip install -r requirements.txt   # includes pylabrobot
 make liquid
 ```
 
 ## What it does
 
-A full 96-well plate, 12 columns, 8-channel head:
+One column, 8-channel, three phases:
 
-1. **Normalize** - computes per-well sample + diluent volumes to hit a target mass at a
-   fixed final volume, then transfers them. Diluent (water) reuses one tip set; sample
-   transfers take fresh tips per column so there's no carryover.
-2. **Edge handling** - wells too dilute to reach the target are capped and flagged
-   (`dilute`); wells so concentrated they'd need a sub-microliter transfer are floored to
-   the minimum pipetting volume and flagged (`min_vol`). Everything else is `ok`.
-3. **Row-pool** - pulls a fixed volume from every normalized well into 8 pooled fractions.
+1. **PCR1 master mix** - distribute PCR1 master mix onto the templates.
+2. **SPRI cleanup** - add beads, move the bead-bound reaction to the magnet position,
+   remove the supernatant, two 80% ethanol washes, elute, and collect the eluate.
+3. **PCR2 index master mix** - add the indexing master mix to the cleaned product.
 
-It writes a transfer **worklist** (`worklist.csv`), a per-well **report**
-(`normalization_report.tsv`), and the full **deck action log** (`deck_actions.log`).
+Everything is built from a single transfer plan, so the executed deck actions and the
+exported worklist can't drift. Fresh tips are taken for every transfer; p50 tips handle
+master mix and elution, p300 tips handle beads, supernatant, and ethanol.
 
 ## Example output
 
 ```
-=== Hamilton STARlet normalization + row-pool (synthetic, chatterbox sim) ===
-plate: 96 wells, 12 columns, 8-channel head
-target 50 ng in 25 uL   |   pool 5 uL/well -> 8 row fractions
-well status: dilute=4, min_vol=6, ok=86
-on-target wells: output mass 49.9 ng, CV 1.8%
-tips used: 200   |   total volume moved: 2880 uL   |   deck actions logged: 1221 lines
+=== Hamilton STAR amplicon-seq library prep (synthetic, chatterbox sim) ===
+mode: DRY / simulated   |   column-1, 8-channel   |   3 phases
+          phase  transfers  volume_ul
+PCR1 master mix          1         20
+   SPRI cleanup          9        819
+  PCR2 index MM          1         18
 
-flagged wells (10):
-well  conc_ng_ul  sample_ul  out_mass_ng  status
-  B1         1.8       24.0         43.2  dilute
-  A9       113.2        1.0        113.2 min_vol
-  ...
+total transfers: 11   |   tips used: p50=32, p300=56   |   volume moved: 6856 uL (x8 channels)
 ```
 
-86 of 96 wells land on target at 1.8% CV; the 10 flagged wells are the deliberately
-dilute and over-concentrated ones. To run on a real instrument, swap
-`LiquidHandlerChatterboxBackend` for the STAR backend - the protocol is unchanged.
+To run on a real instrument, swap `LiquidHandlerChatterboxBackend` for the STAR
+backend behind typed confirmations - the protocol plan is unchanged.
 
-![Deck map and plate heatmaps](assets/normalization_qc.png)
+![Deck map and per-step transfers](assets/libprep_qc.png)
 
 ## Files
 
 ```
-generate_data.py   synthesize a 96-well plate of concentrations (with edge cases)
-normalize.py       plan + edge handling + execute normalization & row-pool (chatterbox)
-plots.py           STARlet deck map + per-well volume and output-mass heatmaps
+generate_data.py   synthesize an 8-sample sheet (column 1) with i7/i5 indices
+run_protocol.py    build the transfer plan + execute it on the STAR (chatterbox)
+plots.py           Hamilton STAR deck map + per-step transfer chart
 ```
 
 ## Outputs
 
 ```
-data/worklist.csv                 per-transfer worklist (step, source, dest, volume)
-data/normalization_report.tsv     per-well conc, volumes, output mass, status
-data/deck_actions.log             every simulated deck action
-assets/normalization_qc.png       deck map + plate heatmaps
+data/worklist.csv            per-transfer worklist (phase, reagent, source, dest, volume, tips)
+data/protocol_summary.tsv    transfers + volume per phase
+data/deck_actions.log        every simulated deck action
+assets/libprep_qc.png        deck map + per-step transfers
 ```
