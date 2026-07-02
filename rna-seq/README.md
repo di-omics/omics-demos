@@ -4,6 +4,8 @@ A small bulk RNA-seq pipeline: synthetic count matrix in, PCA and a differential
 expression call out, scored against a known planted truth so you can see how much
 signal the test actually recovers.
 
+All data is synthetic - no real samples.
+
 ## Run
 
 ```bash

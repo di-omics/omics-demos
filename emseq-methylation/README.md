@@ -5,6 +5,9 @@ conversion controls and reports the metrics you actually gate an EM-seq run on -
 conversion efficiency, CpG protection, coverage, and global methylation - across a
 standard (10 ng) and an ultra-low (0.1 ng) input.
 
+All data is synthetic. This is a self-contained demo of the *analysis* pattern, not
+a production pipeline.
+
 ## Run
 
 ```bash

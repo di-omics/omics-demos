@@ -7,7 +7,7 @@ plate of templates, it runs library prep and hands back an indexed library plus 
 worklist.
 
 The volumes and deck layout here are **generic and illustrative**, not a validated
-method.
+method. All data is synthetic - no real samples.
 
 ## Run
 
