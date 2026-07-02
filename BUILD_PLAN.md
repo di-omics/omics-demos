@@ -33,7 +33,6 @@ read from or copied - every demo is a fresh, generic reimplementation.
 |------------------------------|------------------------|--------|------|
 | emseq-pipeline-validation    | emseq-methylation      | done   | lambda/pUC19 controls, 10 ng vs 0.1 ng |
 | flashseq-umi-pipeline        | umi-dedup              | done   | 1-mismatch directional collapse |
-| icsi-species-comparison      | (removed)              | -      | removed from public repo |
 | flex-demos                   | flex-rna               | done   | **assumes 10x Flex - confirm** |
 | hamilton-star                | liquid-handling        | done   | PyLabRobot chatterbox, STAR; PCR1 MM / SPRI cleanup / PCR2 index (generic volumes) |
 | epigenome                    | chromatin-browser      | done   | self-contained interactive HTML |
