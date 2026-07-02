@@ -4,8 +4,8 @@
 Metrics:
   - Conversion efficiency   = 1 - mCpG(lambda)     [target > 99.5%]
   - CpG protection          = mCpG(pUC19)          [target > ~95%]
-  - Global CpG methylation  per condition          [human ~70-80%]
-  - Mean coverage           per condition
+  - Global methylation per context (CpG, CHG, CHH) per condition
+  - Mean coverage per condition
   - 10 ng vs 0.1 ng comparison
 """
 import pandas as pd
@@ -28,21 +28,26 @@ def main():
     protection = meth_frac(load("control_puc19.tsv"))
 
     rows = []
-    for cond, f in [("10 ng", "cpg_10ng.tsv"), ("0.1 ng", "cpg_0p1ng.tsv")]:
+    for cond, f in [("10 ng", "meth_10ng.tsv"), ("0.1 ng", "meth_0p1ng.tsv")]:
         d = load(f)
         cov = d.meth_reads + d.unmeth_reads
+        cpg = d[d.context == "CpG"]
+        chg = d[d.context == "CHG"]
+        chh = d[d.context == "CHH"]
         rows.append({
             "condition": cond,
-            "cpgs_covered": len(d),
+            "sites_total": len(d),
             "mean_coverage": round(cov.mean(), 2),
-            "global_mCpG": round(meth_frac(d), 4),
+            "mCpG": round(meth_frac(cpg), 4),
+            "mCHG": round(meth_frac(chg), 4),
+            "mCHH": round(meth_frac(chh), 4),
         })
     summary = pd.DataFrame(rows)
 
     print("\n=== EM-seq validation QC (synthetic) ===")
     print(f"Conversion efficiency (lambda): {conv_eff:.2%}   [target > 99.5%]")
     print(f"CpG protection (pUC19):         {protection:.2%}   [target > 95%]")
-    print("\nPer-condition:")
+    print("\nPer-condition methylation by context:")
     print(summary.to_string(index=False))
 
     out = DATA / "qc_summary.tsv"
