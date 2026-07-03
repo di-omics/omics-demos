@@ -31,9 +31,9 @@ def main():
             v = int(vals[i, j])
             if v > 0:
                 ax[0].text(j, i, str(v), ha="center", va="center", fontsize=7,
-                           color=S.OUTLINE["blue"] if v < vals.max() * 0.6 else "white")
+                           color="white" if i == j else S.OUTLINE["blue"])
     ax[0].set_xticks(range(n)); ax[0].set_yticks(range(n))
-    ax[0].set_xticklabels(mat.columns, rotation=45, ha="right", fontsize=8)
+    ax[0].set_xticklabels(mat.columns, fontsize=8)
     ax[0].set_yticklabels(mat.index, fontsize=8)
     ax[0].set_xlabel("i5 sample"); ax[0].set_ylabel("i7 sample")
     ax[0].set_title("Index-pair count matrix (i7 x i5)")
@@ -44,7 +44,7 @@ def main():
     ax[1].bar(x, per_sample.assigned_reads,
               color=S.PALETTE["blue"], edgecolor=S.OUTLINE["blue"], linewidth=0.8)
     ax[1].set_xticks(list(x))
-    ax[1].set_xticklabels(per_sample["sample"], rotation=45, ha="right", fontsize=8)
+    ax[1].set_xticklabels(per_sample["sample"], fontsize=8)
     ax[1].set(title="Assigned reads per sample", ylabel="reads", xlabel="sample")
     ax[1].grid(axis="x", visible=False)
 
