@@ -36,24 +36,36 @@ def peaks(sig, thr):
         if v >= thr and s is None: s = i
         if (v < thr or i == N - 1) and s is not None:
             e = i - 1 if v < thr else i
-            if e - s >= 1: out.append((bp[s], bp[e])); s = None
+            if e - s >= 4: out.append((bp[s], bp[e])); s = None
+            else: s = None
     return out
 
 
-fig, axes = plt.subplots(2, 1, figsize=(9, 3.7), sharex=True)
-tracks = [(axes[0], k, "blue", "H3K27me3", 0.45), (axes[1], p, "green", "Pol II S5p", 0.30)]
-for ax, sig, key, name, thr in tracks:
-    ax.fill_between(bp / 1000, sig, color=S.PALETTE[key], alpha=0.55)
-    ax.plot(bp / 1000, sig, color=S.OUTLINE[key], lw=1.4)
+fig, axes = plt.subplots(4, 1, figsize=(9, 4.2), sharex=True,
+                         gridspec_kw={"height_ratios": [1, 5, 1, 5]})
+tracks = [
+    (axes[0], axes[1], k, "blue", "H3K27me3", 0.45),
+    (axes[2], axes[3], p, "green", "Pol II S5p", 0.30),
+]
+for pk_ax, sig_ax, sig, key, name, thr in tracks:
+    # signal track
+    sig_ax.fill_between(bp / 1000, sig, color=S.PALETTE[key], alpha=0.55)
+    sig_ax.plot(bp / 1000, sig, color=S.OUTLINE[key], lw=1.4)
+    sig_ax.set_ylim(0, 1.05); sig_ax.set_yticks([]); sig_ax.grid(False)
+    sig_ax.text(-0.6, 0.5, name, ha="right", va="center", fontsize=10,
+                color=S.INK, weight="semibold")
+    for sp in ["left", "top", "bottom"]:
+        sig_ax.spines[sp].set_visible(False)
+    # peak annotation strip
     for a, b in peaks(sig, thr):
-        ax.add_patch(FancyBboxPatch((a / 1000, 1.08), (b - a) / 1000, 0.13,
-                     boxstyle="round,pad=0,rounding_size=0.3",
-                     fc=S.PALETTE["pink"], ec=S.OUTLINE["pink"], lw=0.9))
-    ax.set_ylim(0, 1.32); ax.set_yticks([]); ax.grid(False)
-    ax.text(-0.6, 0.5, name, ha="right", va="center", fontsize=10,
-            color=S.INK, weight="semibold")
-    for s in ["left"]: ax.spines[s].set_visible(False)
-axes[1].set_xlabel("position (kb)"); axes[1].set_xlim(0, 50)
+        pk_ax.add_patch(FancyBboxPatch((a / 1000, 0.15), (b - a) / 1000, 0.7,
+                        boxstyle="round,pad=0,rounding_size=0.3",
+                        fc=S.PALETTE["pink"], ec=S.OUTLINE["pink"], lw=0.9))
+    pk_ax.set_ylim(0, 1); pk_ax.set_yticks([]); pk_ax.grid(False)
+    for sp in pk_ax.spines.values():
+        sp.set_visible(False)
+    pk_ax.tick_params(bottom=False, labelbottom=False)
+axes[3].set_xlabel("position (kb)"); axes[3].set_xlim(0, 50)
 fig.suptitle("chromatin-browser - synthetic CUT&Tag signal + called peaks",
              fontsize=11, weight="semibold")
 out = ASSETS / "preview.png"; fig.savefig(out, facecolor=S.PALETTE and "#F6F8FA")
