@@ -29,7 +29,8 @@ def main():
     ax[0].set(title="Sensitivity by allele-fraction bin",
               xlabel="allele fraction bin", ylabel="recall / sensitivity",
               ylim=(-0.05, 1.05), xticks=list(x))
-    ax[0].set_xticklabels(bins.af_bin, rotation=45, ha="right", fontsize=7)
+    short = bins.af_bin.str.replace("0.", ".", regex=False)
+    ax[0].set_xticklabels(short, rotation=30, ha="right", fontsize=7.5)
     ax[0].grid(axis="x", visible=False)
 
     # --- right: true AF vs observed AF scatter ---
