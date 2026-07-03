@@ -18,6 +18,9 @@ make flex         # 10x Flex cell calling
 make rna          # bulk RNA-seq differential expression
 make liquid       # Hamilton STAR library prep (PyLabRobot sim)
 make chromatin    # chromatin browser preview
+make demux        # dual-index demux + index hopping
+make variant      # SNV calling with precision/recall
+make cnv          # coverage-based CNV / ploidy calling
 ```
 
 Python 3.10+. `pylabrobot` (liquid) and `scipy` (rna) are the only demo-specific deps.
@@ -82,6 +85,36 @@ crosshair readout and called peaks. Opens with no server.
 ![chromatin](chromatin-browser/assets/preview.png)
 
 [-> chromatin-browser/](chromatin-browser/)
+
+---
+
+### demux-index-hopping - dual-index demultiplexing + index hopping
+Assigns reads by exact i7/i5 index-pair match, quantifies index-hopping rate from
+off-diagonal counts, and flags unexpected index combinations.
+
+![demux](demux-index-hopping/assets/demux_qc.png)
+
+[-> demux-index-hopping/](demux-index-hopping/)
+
+---
+
+### variant-calling - SNV calling with precision/recall vs truth
+Piles up synthetic reads, calls SNVs above an allele-fraction threshold, and scores
+against planted truth - precision stays high while recall drops at low allele fractions.
+
+![variant](variant-calling/assets/variant_qc.png)
+
+[-> variant-calling/](variant-calling/)
+
+---
+
+### cnv-ploidy - coverage-based CNV / ploidy calling
+Normalizes per-bin coverage, segments with a rolling median, and calls gains/losses
+against a baseline. Planted CNVs are recovered; resolution limits at small events.
+
+![cnv](cnv-ploidy/assets/cnv_qc.png)
+
+[-> cnv-ploidy/](cnv-ploidy/)
 
 ---
 
