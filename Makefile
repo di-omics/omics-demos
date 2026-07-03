@@ -1,4 +1,4 @@
-PY ?= python
+PY ?= python3
 
 .PHONY: all emseq umi flex rna liquid chromatin demux cnv variant clean
 
