@@ -40,7 +40,11 @@ PCR1 master mix          1         20
   PCR2 index MM          1         18
 
 total transfers: 11   |   tips used: p50=32, p300=56   |   volume moved: 6856 uL (x8 channels)
+
+Validation vs plan: transfers 11/11, volume 857/857 uL, tips OK=True -> PASS
 ```
+
+Expected result: worklist matches plan exactly (11 transfers, 857 uL total volume, PASS).
 
 To run on a real instrument, swap `LiquidHandlerChatterboxBackend` for the STAR
 backend behind typed confirmations - the protocol plan is unchanged.

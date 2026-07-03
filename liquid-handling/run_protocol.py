@@ -122,6 +122,18 @@ def main():
     print(f"\ntotal transfers: {len(wl)}   |   tips used: p50={tips['p50']*8}, p300={tips['p300']*8}"
           f"   |   volume moved: {wl.volume_ul.sum()*8:.0f} uL (x8 channels)")
     print(f"deck actions logged: {len(log.splitlines())} lines")
+
+    # --- validation: worklist vs plan ---
+    expected_transfers = sum(1 for _, a, *_ in PLAN if a == "transfer")
+    expected_vol = sum(v for _, a, _, _, _, _, _, v, _ in PLAN if a == "transfer")
+    ok_count = len(wl) == expected_transfers
+    ok_vol = int(wl.volume_ul.sum()) == expected_vol
+    ok_tips = tips["p50"] > 0 and tips["p300"] > 0
+    all_ok = ok_count and ok_vol and ok_tips
+    print(f"\nValidation vs plan: transfers {len(wl)}/{expected_transfers}, "
+          f"volume {int(wl.volume_ul.sum())}/{expected_vol} uL, "
+          f"tips OK={ok_tips} -> {'PASS' if all_ok else 'FAIL'}")
+
     print(f"\nwrote {DATA/'worklist.csv'}, {DATA/'protocol_summary.tsv'}, {DATA/'deck_actions.log'}")
 
 
