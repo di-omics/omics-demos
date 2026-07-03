@@ -30,14 +30,20 @@ Generates synthetic data, runs QC, and writes a plot to `assets/`.
 
 ```
 === EM-seq validation QC (synthetic) ===
-Conversion efficiency (lambda): 99.71%   [target > 99.5%]
-CpG protection (pUC19):         97.22%   [target > 95%]
+Conversion efficiency (lambda): 99.69%   [target > 99.5%]
+CpG protection (pUC19):         97.24%   [target > 95%]
 
-Per-condition:
-condition  cpgs_covered  mean_coverage  global_mCpG
-    10 ng         20000          29.98        0.782
-   0.1 ng         19947           5.99        0.770
+Per-condition methylation by context:
+condition  sites_total  mean_coverage  mCpG   mCHG   mCHH
+    10 ng        75000          30.00 0.782 0.0032 0.0032
+   0.1 ng        74799           6.02 0.775 0.0042 0.0041
+
+Recovery vs planted truth:
+  10 ng: mCpG 0.782 (truth 0.78)
+  0.1 ng: mCpG 0.775 (truth 0.78)
 ```
+
+Expected result: recovered mCpG within ~0.005 of planted 0.78; conversion > 99.5%.
 
 ![QC plots](assets/qc_plots.png)
 

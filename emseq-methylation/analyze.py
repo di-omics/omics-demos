@@ -44,11 +44,21 @@ def main():
         })
     summary = pd.DataFrame(rows)
 
+    # --- validation against planted truth ---
+    TRUE_MCPG = 0.78
+    TRUE_LAMBDA = 0.003
+    TRUE_PUC19 = 0.972
+
     print("\n=== EM-seq validation QC (synthetic) ===")
     print(f"Conversion efficiency (lambda): {conv_eff:.2%}   [target > 99.5%]")
     print(f"CpG protection (pUC19):         {protection:.2%}   [target > 95%]")
     print("\nPer-condition methylation by context:")
     print(summary.to_string(index=False))
+    print(f"\nRecovery vs planted truth:")
+    for _, r in summary.iterrows():
+        print(f"  {r['condition']}: mCpG {r['mCpG']:.3f} (truth {TRUE_MCPG})")
+    print(f"  lambda meth rate {1 - conv_eff:.4f} (truth {TRUE_LAMBDA})")
+    print(f"  pUC19 meth rate  {protection:.4f} (truth {TRUE_PUC19})")
 
     out = DATA / "qc_summary.tsv"
     summary.assign(
