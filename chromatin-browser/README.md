@@ -56,6 +56,8 @@ const peaksP = callPeaks(P, 0.30);  // Pol II S5p
 
 Bins above threshold are merged into contiguous peak regions, drawn as lozenges above each track.
 
+Expected result: Pol II S5p peaks recover all 6 planted promoter positions.
+
 ## Files
 
 ```

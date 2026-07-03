@@ -58,3 +58,13 @@ fig.suptitle("chromatin-browser - synthetic CUT&Tag signal + called peaks",
              fontsize=11, weight="semibold")
 out = ASSETS / "preview.png"; fig.savefig(out, facecolor=S.PALETTE and "#F6F8FA")
 print("wrote", out)
+
+# --- validation: check Pol II peaks vs planted promoter positions ---
+pol_peaks = peaks(p, 0.30)
+k27_peaks = peaks(k, 0.45)
+recovered = 0
+for pr in proms:
+    if any(a <= pr <= b for a, b in pol_peaks):
+        recovered += 1
+print(f"\nPeak calling: H3K27me3 {len(k27_peaks)} peaks, Pol II S5p {len(pol_peaks)} peaks")
+print(f"Pol II peaks recovered {recovered}/{len(proms)} planted promoters")
