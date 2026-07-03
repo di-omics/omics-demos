@@ -35,10 +35,10 @@ def main():
               xlabel="barcode rank", ylabel="total UMI")
     ax[0].legend(fontsize=7)
 
-    # probes/cell per sample
+    # UMI/cell per sample
     called = df[df.called_cell]
     samples = sorted(called.sample_bc.unique())
-    data = [called[called.sample_bc == s].probes_detected.values for s in samples]
+    data = [called[called.sample_bc == s].total_umi.values for s in samples]
     keys = ["blue", "green", "peach", "lav"]
     bp = ax[1].boxplot(data, showfliers=False, patch_artist=True, widths=0.6,
                        medianprops=dict(color=S.INK, linewidth=1.2))
@@ -47,7 +47,7 @@ def main():
     for w in bp["whiskers"] + bp["caps"]:
         w.set(color=S.MUTED, linewidth=1.0)
     ax[1].set_xticks(range(1, len(samples) + 1)); ax[1].set_xticklabels(samples)
-    ax[1].set(title="Probes detected / cell", ylabel="probes",
+    ax[1].set(title="UMI / cell", ylabel="total UMI",
               xlabel="sample barcode")
     ax[1].grid(axis="x", visible=False)
 
