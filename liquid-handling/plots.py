@@ -74,7 +74,7 @@ def main():
     gs = GridSpec(2, 1, height_ratios=[1, 1.35], figure=fig)
     deck_map(fig.add_subplot(gs[0]))
     transfers(fig.add_subplot(gs[1]))
-    fig.suptitle("liquid-handling - amplicon-seq library prep on a Hamilton STAR (PyLabRobot sim)",
+    fig.suptitle("liquid-handling - targeted PCR library preparation on a Hamilton STAR (PyLabRobot sim)",
                  fontsize=12, weight="semibold")
     out = ASSETS / "libprep_qc.png"; fig.savefig(out)
     print("wrote", out)

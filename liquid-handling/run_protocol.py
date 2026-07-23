@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Targeted PCR library prep on a Hamilton STAR, PyLabRobot chatterbox (simulation)
+"""Targeted PCR library preparation on a Hamilton STAR, PyLabRobot chatterbox (simulation)
 backend -- no hardware. Column-1, 8-channel, three phases:
 
   1. PCR1 master mix  -> add master mix to templates
@@ -116,7 +116,7 @@ def main():
         transfers=("volume_ul", "size"), volume_ul=("volume_ul", "sum")).reset_index()
     summ.to_csv(DATA / "protocol_summary.tsv", sep="\t", index=False)
 
-    print("=== Hamilton STAR amplicon-seq library prep (synthetic, chatterbox sim) ===")
+    print("=== Hamilton STAR targeted PCR library preparation (synthetic, chatterbox sim) ===")
     print(f"mode: {'DRY / simulated' if DRY_RUN else 'REAL'}   |   column-1, 8-channel   |   3 phases")
     print(summ.to_string(index=False))
     print(f"\ntotal transfers: {len(wl)}   |   tips used: p50={tips['p50']*8}, p300={tips['p300']*8}"

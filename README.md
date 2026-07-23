@@ -104,7 +104,7 @@ All 3 planted CNVs (chr2 gain 1.5x, chr3 loss 0.5x, chr5 gain 2.0x) recovered ex
 
 ## Automation & interactive
 
-### liquid-handling - targeted PCR library prep on a Hamilton STAR
+### liquid-handling - targeted PCR library preparation on a Hamilton STAR
 PCR1 master mix, SPRI bead cleanup, and PCR2 indexing on a Hamilton STAR deck via
 PyLabRobot's simulation backend - no hardware. Worklist matches plan: 11/11 transfers,
 857/857 uL, PASS.

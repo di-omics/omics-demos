@@ -1,6 +1,6 @@
 # liquid-handling
 
-Targeted PCR library prep on a Hamilton STAR, driven by **PyLabRobot** in simulation
+Targeted PCR library preparation on a Hamilton STAR, driven by **PyLabRobot** in simulation
 (chatterbox) mode - the whole protocol executes and logs every deck action with **no
 hardware**. This is the automation layer under the rest of the omics stack: hand it a
 plate of templates, it runs library prep and hands back an indexed library plus a
@@ -32,7 +32,7 @@ master mix and elution, p300 tips handle beads, supernatant, and ethanol.
 ## Example output
 
 ```
-=== Hamilton STAR amplicon-seq library prep (synthetic, chatterbox sim) ===
+=== Hamilton STAR targeted PCR library preparation (synthetic, chatterbox sim) ===
 mode: DRY / simulated   |   column-1, 8-channel   |   3 phases
           phase  transfers  volume_ul
 PCR1 master mix          1         20
