@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""UMI dedup QC: three methods compared + library-complexity rarefaction.
+"""scRNA-seq UMI QC: three methods plus library-complexity rarefaction.
 
 Dedup methods:
   1. Naive - unique (gene, UMI) pairs
@@ -83,7 +83,7 @@ def main():
     tab = tab.sort_values("raw_reads", ascending=False)
     dup_rate = 1 - tab.directional_umi.sum() / total_reads
 
-    print("\n=== UMI dedup QC (synthetic) ===")
+    print("\n=== scRNA-seq UMI deduplication QC (synthetic) ===")
     print(f"Total reads:              {total_reads}")
     print(f"Naive-unique molecules:   {tab.naive_umi.sum()}")
     print(f"Directional (1-mm):       {tab.directional_umi.sum()}")

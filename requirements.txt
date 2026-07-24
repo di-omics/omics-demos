@@ -2,4 +2,4 @@ numpy>=1.24
 pandas>=2.0
 matplotlib>=3.7
 scipy>=1.10       # only used by rna-seq (t-test)
-pylabrobot>=0.2   # only used by liquid-handling (simulation backend)
+pylabrobot>=0.2   # only used by PCR-enrichment automation

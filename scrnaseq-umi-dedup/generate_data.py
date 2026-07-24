@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Synthesize UMI-tagged reads for the dedup demo.
+"""Synthesize UMI-tagged scRNA-seq reads for the deduplication demo.
 
-Models a FLASH-seq-style library: a set of true mRNA molecules, each tagged with
-a random UMI, then PCR-amplified into many reads. A small per-base error rate
-introduces near-duplicate UMIs (the thing UMI collapsing has to handle).
+Models a generic scRNA-seq library: true mRNA molecules receive random UMIs and
+are PCR-amplified into reads. A small per-base error rate introduces
+near-duplicate UMIs for the collapse methods to resolve.
 
 All data is synthetic.
 """

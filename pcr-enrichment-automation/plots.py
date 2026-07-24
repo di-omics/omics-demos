@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""Figures for the library-prep demo: Hamilton STAR deck map + per-step transfers.
-Writes assets/libprep_qc.png in the shared baby-pastel / Manrope style.
+"""Figures for the PCR-enrichment demo: deck map and per-step transfers.
 """
 import sys
 from pathlib import Path
@@ -14,7 +13,7 @@ from matplotlib.gridspec import GridSpec
 
 ROOT = Path(__file__).parent
 DATA, ASSETS = ROOT / "data", ROOT / "assets"; ASSETS.mkdir(exist_ok=True)
-PHASE_COLOR = {"PCR1 master mix": "blue", "SPRI cleanup": "teal", "PCR2 index MM": "pink"}
+PHASE_COLOR = {"PCR enrichment": "blue", "SPRI cleanup": "teal", "Indexing PCR": "pink"}
 
 
 def box(ax, x, y, w, h, key, label, sub=None, fs=8.5):
@@ -43,7 +42,7 @@ def deck_map(ax):
     ax.add_patch(FancyBboxPatch((6, 0.5), 17.5, 4.4, boxstyle="round,pad=0.05,rounding_size=0.15",
                  fc="white", ec=S.MUTED, lw=1))
     ax.text(14.75, 5.05, "plate carrier", ha="center", fontsize=7.2, color=S.MUTED)
-    plates = [("lav", "reagent", "PCR1 / PCR2 MM"), ("blue", "work", "samples + eluate"),
+    plates = [("lav", "reagent", "PCR / index mixes"), ("blue", "work", "samples + eluate"),
               ("teal", "magnet", "SPRI cleanup"), ("green", "reservoir", "beads / EtOH / EB"),
               ("pink", "waste", "spent liquid")]
     for i, (key, name, sub) in enumerate(plates):
@@ -74,9 +73,9 @@ def main():
     gs = GridSpec(2, 1, height_ratios=[1, 1.35], figure=fig)
     deck_map(fig.add_subplot(gs[0]))
     transfers(fig.add_subplot(gs[1]))
-    fig.suptitle("liquid-handling - targeted PCR library preparation on a Hamilton STAR (PyLabRobot sim)",
+    fig.suptitle("PCR enrichment on a Hamilton STAR (PyLabRobot simulation)",
                  fontsize=12, weight="semibold")
-    out = ASSETS / "libprep_qc.png"; fig.savefig(out)
+    out = ASSETS / "pcr_enrichment_qc.png"; fig.savefig(out)
     print("wrote", out)
 
 

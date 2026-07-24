@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Synthesize a small targeted PCR sample sheet (one column, 8 samples).
+"""Synthesize a PCR-enrichment sample sheet for one eight-sample column.
 
 Each sample gets an input amount and a unique i7/i5 index pair for the PCR2
 indexing step. This drives a generic library-prep automation demo; the volumes
@@ -14,8 +14,8 @@ RNG = np.random.default_rng(5)
 OUT = Path(__file__).parent / "data"; OUT.mkdir(exist_ok=True)
 
 ROWS = list("ABCDEFGH")
-I7 = [f"i7_{n}" for n in ["N701", "N702", "N703", "N704", "N705", "N706", "N707", "N708"]]
-I5 = [f"i5_{n}" for n in ["S507", "S508", "S510", "S511", "S513", "S515", "S516", "S517"]]
+I7 = [f"i7_{n:02d}" for n in range(1, 9)]
+I5 = [f"i5_{n:02d}" for n in range(1, 9)]
 
 if __name__ == "__main__":
     df = pd.DataFrame({

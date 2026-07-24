@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Compute EM-seq validation QC from synthetic methylation calls.
+"""Compute methylation-sequencing QC from synthetic methylation calls.
 
 Metrics:
-  - Conversion efficiency   = 1 - mCpG(lambda)     [target > 99.5%]
-  - CpG protection          = mCpG(pUC19)          [target > ~95%]
+  - Conversion efficiency from an unmethylated control
+  - CpG protection from a methylated control
   - Global methylation per context (CpG, CHG, CHH) per condition
   - Mean coverage per condition
   - 10 ng vs 0.1 ng comparison
@@ -24,8 +24,8 @@ def load(name):
 
 
 def main():
-    conv_eff = 1 - meth_frac(load("control_lambda.tsv"))
-    protection = meth_frac(load("control_puc19.tsv"))
+    conv_eff = 1 - meth_frac(load("control_unmethylated.tsv"))
+    protection = meth_frac(load("control_methylated.tsv"))
 
     rows = []
     for cond, f in [("10 ng", "meth_10ng.tsv"), ("0.1 ng", "meth_0p1ng.tsv")]:
@@ -46,24 +46,26 @@ def main():
 
     # --- validation against planted truth ---
     TRUE_MCPG = 0.78
-    TRUE_LAMBDA = 0.003
-    TRUE_PUC19 = 0.972
+    TRUE_UNMETHYLATED_CONTROL = 0.003
+    TRUE_METHYLATED_CONTROL = 0.972
 
-    print("\n=== EM-seq validation QC (synthetic) ===")
-    print(f"Conversion efficiency (lambda): {conv_eff:.2%}   [target > 99.5%]")
-    print(f"CpG protection (pUC19):         {protection:.2%}   [target > 95%]")
+    print("\n=== Methylation-sequencing QC (synthetic) ===")
+    print(f"Conversion efficiency: {conv_eff:.2%}   [target > 99.5%]")
+    print(f"CpG protection:         {protection:.2%}   [target > 95%]")
     print("\nPer-condition methylation by context:")
     print(summary.to_string(index=False))
     print(f"\nRecovery vs planted truth:")
     for _, r in summary.iterrows():
         print(f"  {r['condition']}: mCpG {r['mCpG']:.3f} (truth {TRUE_MCPG})")
-    print(f"  lambda meth rate {1 - conv_eff:.4f} (truth {TRUE_LAMBDA})")
-    print(f"  pUC19 meth rate  {protection:.4f} (truth {TRUE_PUC19})")
+    print(f"  unmethylated-control rate {1 - conv_eff:.4f} "
+          f"(truth {TRUE_UNMETHYLATED_CONTROL})")
+    print(f"  methylated-control rate   {protection:.4f} "
+          f"(truth {TRUE_METHYLATED_CONTROL})")
 
     out = DATA / "qc_summary.tsv"
     summary.assign(
         conversion_efficiency=round(conv_eff, 5),
-        puc19_protection=round(protection, 5),
+        methylated_control_protection=round(protection, 5),
     ).to_csv(out, sep="\t", index=False)
     print(f"\nwrote {out}")
 

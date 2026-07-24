@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Flex QC: max-curvature knee-point cell calling, ambient-RNA estimate, per-sample demux."""
+"""scRNA-seq QC: knee-point cell calling, ambient RNA, and sample summaries."""
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -77,7 +77,7 @@ def main():
     cell_mean_umi = total_umi[is_cell].mean() if is_cell.any() else 1
     ambient_pct = 100 * empty_mean_umi / cell_mean_umi
 
-    print("\n=== 10x Flex QC (synthetic; max-curvature knee) ===")
+    print("\n=== scRNA-seq cell-calling QC (synthetic; max-curvature knee) ===")
     print(f"Knee point: rank {knee_idx + 1}, UMI threshold {thresh:.0f}")
     tp = ((df.truth == "cell") & df.called_cell).sum()
     fp = ((df.truth == "empty") & df.called_cell).sum()

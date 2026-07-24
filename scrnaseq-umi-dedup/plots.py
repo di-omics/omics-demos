@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Plots for the UMI dedup demo (writes assets/umi_qc.png).
+"""Plots for the scRNA-seq UMI deduplication demo.
 
 Two panels: per-gene bar chart (three methods) + rarefaction curve showing
 naive / directional / adjacency diverge.
@@ -50,7 +50,7 @@ def main():
               xlabel="reads sampled", ylabel="unique molecules")
     ax[1].legend()
 
-    out = ASSETS / "umi_qc.png"; fig.savefig(out)
+    out = ASSETS / "scrnaseq_umi_qc.png"; fig.savefig(out)
     print("wrote", out)
 
 

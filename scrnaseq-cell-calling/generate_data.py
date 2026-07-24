@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""Synthesize a probe-based multiplexed RNA counts matrix (10x Flex-style).
+"""Synthesize a probe-based multiplexed scRNA-seq count matrix.
 
-Assumes a Flex-like design: fixed cells barcoded, probe-set UMI counts, several
-samples multiplexed by probe-barcode (BC). Adds ambient background and a fraction
-of low-quality/empty barcodes. Demo task downstream: demultiplex + per-sample QC.
+The generic design uses barcoded cells, probe-level UMI counts, and samples
+multiplexed by sample barcode. It adds ambient background and empty barcodes for
+downstream cell-calling and per-sample QC.
 
-Assumption: 'flex-demos' == 10x Genomics Flex. Swap the model if that's wrong.
 All data is synthetic.
 """
 import numpy as np
@@ -16,7 +15,7 @@ RNG = np.random.default_rng(11)
 OUT = Path(__file__).parent / "data"; OUT.mkdir(exist_ok=True)
 
 N_PROBES = 200
-SAMPLES = ["BC01", "BC02", "BC03", "BC04"]     # probe barcodes = multiplexed samples
+SAMPLES = ["BC01", "BC02", "BC03", "BC04"]     # multiplexed sample barcodes
 CELLS_PER_SAMPLE = 300
 EMPTY_FRAC = 0.25                               # background/empty barcodes
 

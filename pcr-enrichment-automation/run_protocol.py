@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Targeted PCR library preparation on a Hamilton STAR, PyLabRobot chatterbox (simulation)
+"""PCR enrichment on a Hamilton STAR with the PyLabRobot simulation
 backend -- no hardware. Column-1, 8-channel, three phases:
 
-  1. PCR1 master mix  -> add master mix to templates
+  1. PCR enrichment   -> add master mix to templates
   2. SPRI cleanup     -> beads, move to magnet, remove supernatant, 2x ethanol
                          wash, elute, collect
-  3. PCR2 index MM    -> add indexing master mix to the cleaned product
+  3. Indexing PCR     -> add indexing master mix to the cleaned product
 
 The whole run is built from one transfer plan, so the executed deck actions and
 the exported worklist can never drift. Volumes and layout are generic and
@@ -27,7 +27,7 @@ DATA = Path(__file__).parent / "data"
 DRY_RUN = True   # chatterbox = simulated/dry; real runs use the STAR backend + confirmations
 
 # generic, illustrative volumes (uL)
-PCR1_MM, PCR2_MM, SPRI, BEAD_MOVE, SUP, ETOH, ELUTE = 20, 18, 45, 68, 66, 150, 20
+ENRICHMENT_MM, INDEX_MM, SPRI, BEAD_MOVE, SUP, ETOH, ELUTE = 20, 18, 45, 68, 66, 150, 20
 
 # column-1 ranges by labware column
 C = {1: "A1:H1", 2: "A2:H2", 3: "A3:H3", 4: "A4:H4"}
@@ -35,8 +35,8 @@ C = {1: "A1:H1", 2: "A2:H2", 3: "A3:H3", 4: "A4:H4"}
 # transfer plan: single source of truth for execution + worklist.
 # (phase, action, reagent, src_labware, src_range, dst_labware, dst_range, volume, tips)
 PLAN = [
-    ("PCR1 master mix", "transfer", "PCR1 master mix", "reagent", C[1], "work", C[1], PCR1_MM, "p50"),
-    ("PCR1 master mix", "note", "thermocycle PCR1 (offline)", None, None, None, None, None, None),
+    ("PCR enrichment", "transfer", "PCR enrichment mix", "reagent", C[1], "work", C[1], ENRICHMENT_MM, "p50"),
+    ("PCR enrichment", "note", "thermocycle PCR enrichment (offline)", None, None, None, None, None, None),
 
     ("SPRI cleanup", "transfer", "SPRI beads 1.8x", "reservoir", C[1], "work", C[1], SPRI, "p300"),
     ("SPRI cleanup", "note", "mix, bind 5 min", None, None, None, None, None, None),
@@ -52,8 +52,8 @@ PLAN = [
     ("SPRI cleanup", "note", "mix, elute, re-engage magnet", None, None, None, None, None, None),
     ("SPRI cleanup", "transfer", "eluate", "magnet", C[1], "work", C[2], ELUTE, "p50"),
 
-    ("PCR2 index MM", "transfer", "PCR2 index master mix", "reagent", C[2], "work", C[2], PCR2_MM, "p50"),
-    ("PCR2 index MM", "note", "thermocycle PCR2 indexing (offline)", None, None, None, None, None, None),
+    ("Indexing PCR", "transfer", "Indexing PCR mix", "reagent", C[2], "work", C[2], INDEX_MM, "p50"),
+    ("Indexing PCR", "note", "thermocycle indexing PCR (offline)", None, None, None, None, None, None),
 ]
 
 
@@ -116,7 +116,7 @@ def main():
         transfers=("volume_ul", "size"), volume_ul=("volume_ul", "sum")).reset_index()
     summ.to_csv(DATA / "protocol_summary.tsv", sep="\t", index=False)
 
-    print("=== Hamilton STAR targeted PCR library preparation (synthetic, chatterbox sim) ===")
+    print("=== Hamilton STAR PCR enrichment (synthetic simulation) ===")
     print(f"mode: {'DRY / simulated' if DRY_RUN else 'REAL'}   |   column-1, 8-channel   |   3 phases")
     print(summ.to_string(index=False))
     print(f"\ntotal transfers: {len(wl)}   |   tips used: p50={tips['p50']*8}, p300={tips['p300']*8}"

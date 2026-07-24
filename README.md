@@ -1,130 +1,114 @@
 # omics-demos
 
-Self-contained demos from an omics and lab-automation stack. Each demo runs in
-one command, generates its own synthetic data, and shows exactly one idea.
-Each demo plants known ground truth, runs the method blind, and scores how well
-it recovers it.
+Self-contained demonstrations of sequencing analysis and lab automation. Each
+demo generates synthetic data, plants known ground truth, runs one method, and
+scores the result.
 
-Clean-room by design: no proprietary data or code - every dataset is generated on the fly.
+The repository contains no proprietary data or code.
 
 ## Quickstart
 
 ```bash
 pip install -r requirements.txt
-make all          # run every demo
-# or one at a time:
-make emseq        # EM-seq methylation QC
-make umi          # UMI deduplication
-make flex         # 10x Flex cell calling
-make rna          # bulk RNA-seq differential expression
-make demux        # dual-index demux + index hopping
-make variant      # SNV calling with precision/recall
-make cnv          # coverage-based CNV / ploidy calling
-make liquid       # Hamilton STAR library prep (PyLabRobot sim)
-make chromatin    # chromatin browser preview
+make all
+
+# Run one demo
+make methylation
+make scrna-umi
+make scrna-cell-calling
+make rna
+make demux
+make variant
+make cnv
+make pcr-enrichment
+make chromatin
 ```
 
-Python 3.10+. `pylabrobot` (liquid) and `scipy` (rna) are the only demo-specific deps.
+Python 3.10 or newer is recommended. PyLabRobot is used only by the
+PCR-enrichment automation demo, and SciPy is used only by the bulk RNA-seq demo.
 
----
+## Sequencing QC and analysis
 
-## Sequencing QC & analysis
+### Methylation sequencing
 
-### emseq-methylation - EM-seq methylation QC
-Conversion efficiency, CpG protection, and global methylation across standard (10 ng)
-and ultra-low (0.1 ng) inputs using lambda/pUC19 spike-in controls. Recovered mCpG
-0.782 vs planted 0.78; conversion 99.69%.
+Conversion efficiency, CpG protection, coverage, and global methylation across
+standard and low-input synthetic libraries.
 
-![emseq](emseq-methylation/assets/qc_plots.png)
+![Methylation-sequencing QC](methylation-sequencing/assets/qc_plots.png)
 
-[-> emseq-methylation/](emseq-methylation/)
+[Open the methylation-sequencing demo](methylation-sequencing/)
 
----
+### scRNA-seq UMI deduplication
 
-### umi-dedup - UMI deduplication
-1-mismatch directional collapse recovers 2,999 molecules from 18,000 reads (truth:
-3,000). Naive counting overcounts at 3,528 because sequencing errors mint false UMIs.
+Directional and adjacency-based UMI collapse recover molecule counts from
+duplicated, error-containing synthetic scRNA-seq reads.
 
-![umi](umi-dedup/assets/umi_qc.png)
+![scRNA-seq UMI QC](scrnaseq-umi-dedup/assets/scrnaseq_umi_qc.png)
 
-[-> umi-dedup/](umi-dedup/)
+[Open the scRNA-seq UMI demo](scrnaseq-umi-dedup/)
 
----
+### scRNA-seq cell calling
 
-### flex-rna - 10x Flex cell calling
-Max-curvature knee calling on a multiplexed probe-based library. Calls 1,014 cells
-with 0 false positives and 186 missed low-UMI cells out of 1,200 true cells.
+Max-curvature knee calling separates cells from ambient barcodes in a synthetic
+multiplexed, probe-based scRNA-seq count matrix.
 
-![flex](flex-rna/assets/flex_qc.png)
+![scRNA-seq cell-calling QC](scrnaseq-cell-calling/assets/scrnaseq_qc.png)
 
-[-> flex-rna/](flex-rna/)
+[Open the scRNA-seq cell-calling demo](scrnaseq-cell-calling/)
 
----
+### Bulk RNA-seq
 
-### rna-seq - bulk differential expression
-CPM normalization, PCA, and Welch t-test with BH FDR on a two-condition count matrix.
-Recovers 57.5% of 120 planted DE genes at 88.5% precision, 100% sign agreement.
+CPM normalization, PCA, Welch's t-test, and false-discovery-rate correction on a
+two-condition count matrix.
 
-![rna-seq](rna-seq/assets/rnaseq_qc.png)
+![Bulk RNA-seq QC](rna-seq/assets/rnaseq_qc.png)
 
-[-> rna-seq/](rna-seq/)
+[Open the bulk RNA-seq demo](rna-seq/)
 
----
+### Dual-index demultiplexing
 
-### demux-index-hopping - dual-index demultiplexing + index hopping
-Assigns reads by exact i7/i5 index-pair match and quantifies hopping from off-diagonal
-counts. Estimated hopping rate 2.00%, matching the injected 2%.
+Exact i7/i5 pair assignment and synthetic index-hopping measurement.
 
-![demux](demux-index-hopping/assets/demux_qc.png)
+![Demultiplexing QC](demux-index-hopping/assets/demux_qc.png)
 
-[-> demux-index-hopping/](demux-index-hopping/)
+[Open the demultiplexing demo](demux-index-hopping/)
 
----
+### Variant calling
 
-### variant-calling - SNV calling with precision/recall vs truth
-Piles up reads, calls SNVs above an allele-fraction threshold, and scores against 30
-planted variants. Precision 0.74, recall 0.93 overall; sensitivity drops to 0.67 below
-5% AF.
+Synthetic pileup, allele-fraction thresholding, and SNV precision/recall scoring.
 
-![variant](variant-calling/assets/variant_qc.png)
+![Variant-calling QC](variant-calling/assets/variant_qc.png)
 
-[-> variant-calling/](variant-calling/)
+[Open the variant-calling demo](variant-calling/)
 
----
+### CNV and ploidy
 
-### cnv-ploidy - coverage-based CNV / ploidy calling
-GC-corrected coverage, rolling-median segmentation, threshold-based gain/loss calling.
-All 3 planted CNVs (chr2 gain 1.5x, chr3 loss 0.5x, chr5 gain 2.0x) recovered exactly.
+GC-corrected coverage, rolling-median segmentation, and gain/loss calling.
 
-![cnv](cnv-ploidy/assets/cnv_qc.png)
+![CNV QC](cnv-ploidy/assets/cnv_qc.png)
 
-[-> cnv-ploidy/](cnv-ploidy/)
+[Open the CNV demo](cnv-ploidy/)
 
----
+## Automation and interactive demos
 
-## Automation & interactive
+### PCR enrichment automation
 
-### liquid-handling - targeted PCR library preparation on a Hamilton STAR
-PCR1 master mix, SPRI bead cleanup, and PCR2 indexing on a Hamilton STAR deck via
-PyLabRobot's simulation backend - no hardware. Worklist matches plan: 11/11 transfers,
-857/857 uL, PASS.
+PCR enrichment, SPRI cleanup, and indexing on a simulated Hamilton STAR through
+PyLabRobot. The executed transfers and exported worklist share one source plan.
 
-![liquid](liquid-handling/assets/libprep_qc.png)
+![PCR-enrichment automation QC](pcr-enrichment-automation/assets/pcr_enrichment_qc.png)
 
-[-> liquid-handling/](liquid-handling/)
+[Open the PCR-enrichment automation demo](pcr-enrichment-automation/)
 
----
+### Chromatin browser
 
-### chromatin-browser - interactive CUT&Tag track browser
-H3K27me3 and Pol II S5p signal over a synthetic locus with threshold-based peak calling.
-Pol II peaks recover 6/6 planted promoter positions. Opens in any browser, no server.
+An interactive CUT&Tag track browser over a synthetic locus with threshold-based
+peak calling.
 
-![chromatin](chromatin-browser/assets/preview.png)
+![Chromatin browser](chromatin-browser/assets/preview.png)
 
-[-> chromatin-browser/](chromatin-browser/)
-
----
+[Open the chromatin-browser demo](chromatin-browser/)
 
 ## License
 
-MIT - see [LICENSE](LICENSE).
+MIT; see [LICENSE](LICENSE).

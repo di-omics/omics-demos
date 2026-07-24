@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Plots for the Flex demo (writes assets/flex_qc.png).
+"""Plots for the scRNA-seq cell-calling demo.
 
 Three panels: barcode-rank (knee) with curvature-detected threshold,
 probes/cell per sample, and ambient RNA profile.
@@ -62,7 +62,7 @@ def main():
     ax[2].invert_yaxis()
     ax[2].grid(axis="y", visible=False)
 
-    out = ASSETS / "flex_qc.png"; fig.savefig(out)
+    out = ASSETS / "scrnaseq_qc.png"; fig.savefig(out)
     print("wrote", out)
 
 

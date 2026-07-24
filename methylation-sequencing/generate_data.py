@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Generate synthetic EM-seq methylation data for the demo.
+"""Generate synthetic methylation-sequencing data for the demo.
 
 Produces per-site methylation calls in three contexts (CpG, CHG, CHH) for two
-input conditions (10 ng and 0.1 ng) plus unmethylated (lambda) and CpG-methylated
-(pUC19) spike-in controls. Also generates per-read-position methylation rates for
-M-bias plotting.
+input conditions (10 ng and 0.1 ng) plus functional unmethylated and methylated
+controls. Also generates per-read-position methylation rates for M-bias plotting.
 
 All data is synthetic. No real sequencing data is used.
 """
@@ -106,8 +105,8 @@ def simulate_mbias(name, read_len=READ_LEN, n_reads=50_000, base_rate=0.78,
 if __name__ == "__main__":
     simulate_condition("10ng", mean_cov=30, conversion=0.9968)
     simulate_condition("0p1ng", mean_cov=6, conversion=0.9959)
-    simulate_spikein("lambda", n_sites=1500, meth_target=0.003)
-    simulate_spikein("puc19", n_sites=1500, meth_target=0.972)
+    simulate_spikein("unmethylated", n_sites=1500, meth_target=0.003)
+    simulate_spikein("methylated", n_sites=1500, meth_target=0.972)
     simulate_mbias("10ng", conversion=0.9968)
     simulate_mbias("0p1ng", conversion=0.9959, n_reads=10_000)
     print("wrote synthetic data to", OUT)

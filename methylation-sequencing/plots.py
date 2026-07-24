@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""QC plots for the EM-seq demo (writes assets/qc_plots.png).
+"""QC plots for the methylation-sequencing demo.
 
 Four panels: per-CpG methylation histogram, spike-in controls,
 CpG/CHG/CHH context breakdown, and M-bias (per-read-position).
@@ -34,11 +34,19 @@ def main():
     ax[0, 0].legend()
 
     # (0,1) Spike-in controls
-    lam = pd.read_csv(DATA / "control_lambda.tsv", sep="\t")
-    puc = pd.read_csv(DATA / "control_puc19.tsv", sep="\t")
-    ce = 100 * (1 - lam.meth_reads.sum() / (lam.meth_reads + lam.unmeth_reads).sum())
-    pr = 100 * puc.meth_reads.sum() / (puc.meth_reads + puc.unmeth_reads).sum()
-    ax[0, 1].bar(["conversion\n(lambda)", "protection\n(pUC19)"], [ce, pr],
+    unmethylated = pd.read_csv(DATA / "control_unmethylated.tsv", sep="\t")
+    methylated = pd.read_csv(DATA / "control_methylated.tsv", sep="\t")
+    ce = 100 * (
+        1
+        - unmethylated.meth_reads.sum()
+        / (unmethylated.meth_reads + unmethylated.unmeth_reads).sum()
+    )
+    pr = (
+        100
+        * methylated.meth_reads.sum()
+        / (methylated.meth_reads + methylated.unmeth_reads).sum()
+    )
+    ax[0, 1].bar(["conversion", "protection"], [ce, pr],
                  color=[S.PALETTE["blue"], S.PALETTE["pink"]],
                  edgecolor=[S.OUTLINE["blue"], S.OUTLINE["pink"]], width=0.6)
     ax[0, 1].set(title="Spike-in controls", ylabel="%", ylim=(0, 114))

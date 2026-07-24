@@ -1,23 +1,23 @@
 PY ?= python3
 
-.PHONY: all emseq umi flex rna liquid chromatin demux cnv variant clean
+.PHONY: all methylation scrna-umi scrna-cell-calling rna pcr-enrichment chromatin demux cnv variant clean
 
-all: emseq umi flex rna liquid chromatin demux cnv variant
+all: methylation scrna-umi scrna-cell-calling rna pcr-enrichment chromatin demux cnv variant
 
-emseq:
-	cd emseq-methylation && $(PY) generate_data.py && $(PY) analyze.py && $(PY) plots.py
+methylation:
+	cd methylation-sequencing && $(PY) generate_data.py && $(PY) analyze.py && $(PY) plots.py
 
-umi:
-	cd umi-dedup && $(PY) generate_data.py && $(PY) analyze.py && $(PY) plots.py
+scrna-umi:
+	cd scrnaseq-umi-dedup && $(PY) generate_data.py && $(PY) analyze.py && $(PY) plots.py
 
-flex:
-	cd flex-rna && $(PY) generate_data.py && $(PY) analyze.py && $(PY) plots.py
+scrna-cell-calling:
+	cd scrnaseq-cell-calling && $(PY) generate_data.py && $(PY) analyze.py && $(PY) plots.py
 
 rna:
 	cd rna-seq && $(PY) generate_data.py && $(PY) analyze.py && $(PY) plots.py
 
-liquid:
-	cd liquid-handling && $(PY) generate_data.py && $(PY) run_protocol.py && $(PY) plots.py
+pcr-enrichment:
+	cd pcr-enrichment-automation && $(PY) generate_data.py && $(PY) run_protocol.py && $(PY) plots.py
 
 demux:
 	cd demux-index-hopping && $(PY) generate_data.py && $(PY) analyze.py && $(PY) plots.py
